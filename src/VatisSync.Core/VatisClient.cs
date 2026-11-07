@@ -30,7 +30,7 @@ public sealed record VatisAtisState(string NetworkConnectionStatus, string Airpo
 /// Talks to vATIS's local websocket API. Like the original script, each request uses its own short-lived
 /// connection (some calls are fire-and-forget, and connectAtis may not reply at all).
 /// </summary>
-public sealed class VatisClient(IVatisSocketFactory factory)
+public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
 {
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(1);
 

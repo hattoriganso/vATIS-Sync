@@ -9,7 +9,7 @@ public sealed record DatisFetchResult(IReadOnlyList<DatisEntry> Entries, bool Fr
 }
 
 /// <summary>Downloads https://atis.info/api/all and keeps the last good copy.</summary>
-public sealed class DatisFetcher
+public sealed class DatisFetcher : IDatisSource
 {
     public static readonly Uri DefaultUrl = new("https://atis.info/api/all");
 
