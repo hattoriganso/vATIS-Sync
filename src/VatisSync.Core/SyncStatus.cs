@@ -18,6 +18,9 @@ public sealed record SyncOptions
     public bool AutoConnectActivePosition { get; init; } = true;
     public bool LaunchVatis { get; init; } = true;
 
+    /// <summary>Ids of built-in cleanup rules (see <see cref="BuiltInRules"/>) the user switched off.</summary>
+    public IReadOnlyList<string> DisabledRules { get; init; } = [];
+
     /// <summary>How long to wait for vATIS to answer after launching it, per attempt.</summary>
     public TimeSpan StartupTimeout { get; init; } = TimeSpan.FromMinutes(5);
 

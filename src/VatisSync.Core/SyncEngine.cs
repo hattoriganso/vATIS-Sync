@@ -155,6 +155,7 @@ public sealed class SyncEngine(
         var stations = await DatisStationsAsync(ct).ConfigureAwait(false);
         var airports = stations.Select(s => s.Key[..4]).Distinct();
         var rules = await replacements.GetAsync(airports, ct).ConfigureAwait(false);
+        var builtIn = BuiltInRules.PatternsFor(options.DisabledRules);
 
         var fetch = await datis.FetchAsync(ct).ConfigureAwait(false);
         if (!fetch.Succeeded)
@@ -171,7 +172,7 @@ public sealed class SyncEngine(
                 continue;
             }
 
-            var stationRules = new List<KeyValuePair<string, string>>();
+            var stationRules = new List<KeyValuePair<string, string>>(builtIn);
             if (rules.TryGetValue(s.Key[..4], out var airportRules)) stationRules.AddRange(airportRules);
             if (removals is not null && removals.TryGetValue(s.Key, out var deleted))
                 stationRules.AddRange(DeletionTracker.AsRemovalRules(deleted));

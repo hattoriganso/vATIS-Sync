@@ -190,6 +190,38 @@ public class SyncEngineTests
         Assert.Equal("TWY C CLSD.", calls[1].Notams.Trim());
     }
 
+    private static DatisEntry FssEntry() => new("KSFO", "combined",
+        "SFO ATIS INFO A 1156Z. 28010KT 10SM CLR. ILS RWY 28R IN USE. HAZD WX INFO FOR SFO AREA AVBL FM FSS. TWY B CLSD. ...ADVS YOU HAVE INFO A.",
+        Now.AddMinutes(-10).ToString("yyyy-MM-ddTHH:mm:ss.ffffff"));
+
+    [Fact]
+    public async Task Built_in_cleanup_rules_apply_by_default()
+    {
+        var r = new Rig();
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [FssEntry()];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal("ILS RWY 28R IN USE. TWY B CLSD.", r.Vatis.Configures("KSFO")[^1].Conditions.Trim());
+    }
+
+    [Fact]
+    public async Task A_rule_the_user_switched_off_leaves_the_text_alone()
+    {
+        var r = new Rig(Rig.Fast() with { DisabledRules = ["flight-service-pointers"] });
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [FssEntry()];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Contains("HAZD WX INFO FOR SFO AREA AVBL FM FSS.", r.Vatis.Configures("KSFO")[^1].Conditions);
+    }
+
     [Fact]
     public async Task Letter_is_synced_only_once_across_refreshes()
     {
