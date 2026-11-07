@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Upstream reference script (glott/vATISLoad): not our code, kept locally only
 /vATISLoad.py
+
+# Private planning notes, local only
+/PLAN.md
