@@ -1,0 +1,12 @@
+# Normalize line endings: text files are stored with LF in the repo and checked out with LF everywhere.
+* text=auto eol=lf
+
+# Visual Studio solution files expect CRLF.
+*.sln text eol=crlf
+
+# Binary files: never touch.
+*.png binary
+*.jpg binary
+*.ico binary
+*.exe binary
+*.dll binary
