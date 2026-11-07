@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3119F162
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VatisSync.Tests", "tests\VatisSync.Tests\VatisSync.Tests.csproj", "{F47038F8-9B03-4262-850B-399F352BC0EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VatisSync", "src\VatisSync\VatisSync.csproj", "{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{F47038F8-9B03-4262-850B-399F352BC0EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F47038F8-9B03-4262-850B-399F352BC0EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F47038F8-9B03-4262-850B-399F352BC0EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F1F4A4C7-D1B4-4955-8D18-31EF6D34A394} = {47ED2F9A-CD9B-4916-9BE1-D1057628DCF0}
 		{F47038F8-9B03-4262-850B-399F352BC0EA} = {3119F162-BDF5-4B70-B905-BC932E3C0089}
+		{C86CBB69-66C4-474E-A55B-CA8BF6AF3CD1} = {47ED2F9A-CD9B-4916-9BE1-D1057628DCF0}
 	EndGlobalSection
 EndGlobal
