@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Rules\replacements.json" />
+    <EmbeddedResource Include="Rules\builtin-rules.json" />
   </ItemGroup>
 </Project>
 

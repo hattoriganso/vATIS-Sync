@@ -1,0 +1,29 @@
+{
+  // Built-in cleanup rules that apply to every airport. The user can switch each one off by id.
+  // Each rule has one or more regular expressions that are applied in order; every match is removed
+  // (the formatter also swallows a trailing , . ;). Patterns use the placeholder {S} for "a sentence
+  // fragment": anything up to a period, except periods inside numbers such as 118.3.
+  "rules": [
+    {
+      "id": "flight-service-pointers",
+      "name": "Flight service / hazardous weather pointers",
+      "description": "Removes sentences that send pilots to Flight Service for hazardous weather information, which has no meaning on VATSIM.",
+      "patterns": [ "{S}\\b(?:A?FSS|FLIGHT SERVICE|HAZD? WX|HAZARDOUS WX)\\b{S}" ]
+    },
+    {
+      "id": "drone-laser-reports",
+      "name": "Drone, UAS and laser reports",
+      "description": "Removes sentences about drone, UAS or laser activity.",
+      "patterns": [ "{S}\\b(?:UAS|UAV|DRONES?|LASER)\\b{S}" ]
+    },
+    {
+      "id": "tfr-notam-pointers",
+      "name": "TFR notices and 'check NOTAMs' pointers",
+      "description": "Removes 'TFR IN EFFECT' sentences and the 'CHECK NOTAMS' pointer (NOTAMs are not available on VATSIM).",
+      "patterns": [
+        "\\s*\\bCHECK NOTAMS\\b(?: FOR ADNL INFO)?(?=\\.\\.\\.)",
+        "{S}\\bTFR IN EFFECT\\b{S}"
+      ]
+    }
+  ]
+}
