@@ -35,6 +35,12 @@ public partial class App : Application
         _vm = new MainViewModel(applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; });
         _window = new MainWindow(_vm);
         CreateTray();
+        _window.HiddenToTray += () =>
+        {
+            if (_vm.TakeTrayHint())
+                _tray?.ShowNotification("vATIS-Sync is still running",
+                    "It stays in the tray so syncing continues. Right-click the icon and choose Exit to quit.");
+        };
 
         if (!_vm.ShouldStartHidden) _window.Show();
         _vm.StartIfConfigured();

@@ -36,6 +36,9 @@ public sealed record AppSettings
     /// <summary>Closing the window keeps the app running in the tray.</summary>
     public bool CloseToTray { get; init; } = true;
 
+    /// <summary>The "still running in the tray" notification has been shown once already.</summary>
+    public bool TrayHintShown { get; init; }
+
     /// <summary>Out-of-range or malformed values replaced with safe ones.</summary>
     public AppSettings Normalized() => this with
     {

@@ -12,6 +12,9 @@ public partial class MainWindow : Window
     /// <summary>Set by the app when the user really wants to exit (tray menu), so Close() is not turned into hide.</summary>
     public bool AllowClose { get; set; }
 
+    /// <summary>Raised when closing the window only hid it (the app keeps running in the tray).</summary>
+    public event Action? HiddenToTray;
+
     public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
@@ -31,6 +34,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
             Hide();
+            HiddenToTray?.Invoke();
         }
         base.OnClosing(e);
     }

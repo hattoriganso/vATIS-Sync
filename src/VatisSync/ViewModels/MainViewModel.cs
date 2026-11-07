@@ -112,8 +112,18 @@ public sealed partial class MainViewModel : ObservableObject
         Save();
     }
 
+    /// <summary>True the first time only: the caller should tell the user the app is still in the tray.</summary>
+    public bool TakeTrayHint()
+    {
+        if (_settings.TrayHintShown) return false;
+        _settings = _settings with { TrayHintShown = true };
+        _store.Save(_settings);
+        return true;
+    }
+
     private AppSettings Current => new()
     {
+        TrayHintShown = _settings.TrayHintShown,
         IntervalMinutes = IntervalMinutes,
         MaxConnections = MaxConnections,
         Airports = [.. Airports],

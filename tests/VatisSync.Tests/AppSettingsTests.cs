@@ -22,7 +22,7 @@ public class AppSettingsTests : TempDirTests
         Assert.True(store.Save(new AppSettings
         {
             IntervalMinutes = 10, Airports = ["KSFO", "KOAK"], DisabledRules = ["drone-laser-reports"],
-            StartWithWindows = true, StartMinimized = true, CloseToTray = false,
+            StartWithWindows = true, StartMinimized = true, CloseToTray = false, TrayHintShown = true,
         }));
 
         var s = store.Load();
@@ -31,6 +31,8 @@ public class AppSettingsTests : TempDirTests
         Assert.Equal(["drone-laser-reports"], s.DisabledRules);
         Assert.True(s.StartWithWindows);
         Assert.False(s.CloseToTray);
+        Assert.True(s.TrayHintShown);
+        Assert.False(new AppSettings().TrayHintShown);
         Assert.False(File.Exists(SettingsPath + ".tmp"));
     }
 
