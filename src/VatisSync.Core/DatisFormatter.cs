@@ -21,6 +21,9 @@ public static class DatisFormatter
 {
     public const double MaxAgeHours = 1.75;
 
+    /// <summary>Rules are user-editable regexes, so cap how long any one may run.</summary>
+    private static readonly TimeSpan RuleTimeout = TimeSpan.FromSeconds(1);
+
     private static readonly Regex NoticeToAirmen = new(
         @"NOTICES? TO AIR ?(?:MEN|MISSIONS)(?:, NOTAMS)?\.? ", RegexOptions.Compiled);
 
@@ -72,8 +75,11 @@ public static class DatisFormatter
             foreach (var (pattern, replacement) in replacements)
             {
                 var repl = ToDotNetReplacement(replacement.Replace("%r", ""));
-                try { datis = Regex.Replace(datis, pattern + "[,.;]{0,2}", repl); }
-                catch (ArgumentException) { /* bad remote rule: skip it rather than crash the sync */ }
+                try { datis = Regex.Replace(datis, pattern + "[,.;]{0,2}", repl, RegexOptions.None, RuleTimeout); }
+                catch (Exception ex) when (ex is ArgumentException or RegexMatchTimeoutException)
+                {
+                    // Bad or pathological rule: skip it rather than crash or hang the sync.
+                }
             }
         }
 
