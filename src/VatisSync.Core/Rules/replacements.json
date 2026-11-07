@@ -1,0 +1,7 @@
+{
+  // Built-in cleanup rules, shipped with the app. Format:
+  //   "ICAO": { "regular expression": "replacement" }
+  // An empty replacement removes the match (and any trailing , . ;). Rules are our own: add them here
+  // as real D-ATIS feed data shows what is worth cleaning up.
+  "replacements": {}
+}
