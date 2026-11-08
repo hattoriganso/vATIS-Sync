@@ -81,37 +81,33 @@
                         <Border.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding ShowOverviewCommand}"/>
                         </Border.InputBindings>
-                        <Border.Resources>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="#1F2937"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsOverviewSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="White"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Resources>
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="Background" Value="White"/>
-                                <Setter Property="BorderThickness" Value="1"/>
-                                <Setter Property="BorderBrush" Value="#C9D3E0"/>
+                                <!-- Same look as an airport row: flat, pale blue wash when hovered or selected -->
+                                <Setter Property="Background" Value="Transparent"/>
                                 <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#FFE5F1FB"/>
+                                    </Trigger>
                                     <DataTrigger Binding="{Binding IsOverviewSelected}" Value="True">
-                                        <Setter Property="Background" Value="#1F6FD6"/>
-                                        <Setter Property="BorderBrush" Value="#1F6FD6"/>
+                                        <Setter Property="Background" Value="#FFC4DDF0"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE80F;" FontSize="16"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <!-- The icon is centered against both lines (title and status), not just the title -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE80F;" FontSize="18"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Overview" FontWeight="SemiBold" FontSize="15"/>
+                                <TextBlock Text="{Binding Headline}" FontSize="12" Margin="0,2,0,0"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding Headline}" FontSize="12" Margin="24,2,0,0"/>
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
                     <TextBlock DockPanel.Dock="Top" Text="AIRPORTS" FontSize="11" FontWeight="SemiBold"
@@ -216,7 +212,7 @@
                 <!-- Overview: stations and log -->
                 <DockPanel Visibility="{Binding IsOverviewSelected, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                        <TextBlock Text="Overview" FontSize="22" FontWeight="SemiBold" Foreground="#1F6FD6"/>
+                        <TextBlock Text="Overview" FontSize="22" FontWeight="SemiBold"/>
                         <TextBlock Text="All your stations and the activity log" Style="{StaticResource Hint}"/>
                     </StackPanel>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
@@ -249,7 +245,7 @@
                             <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
                         <ListBox Grid.Row="2" x:Name="LogList" Padding="10,8" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:LogLine}">
                                     <Border CornerRadius="3" Padding="6,1">
@@ -269,7 +265,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
-                                        <TextBlock Text="{Binding Text}">
+                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
