@@ -151,6 +151,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool _discoveryAnnounced; // the warning has been shown once in this run of failures, so it is not re-shown if closed
     private bool _manualRefresh;      // the user pressed the button, so say what the re-read found even when nothing changed
+    private int _loggedFailures;      // failed attempts already written to the log in this run of failures
 
     [ObservableProperty] private string _discoveryText = "Looking for vATIS…";
     [ObservableProperty] private string _discoveryButtonText = "Retry now";
@@ -183,10 +184,14 @@ public sealed partial class MainViewModel : ObservableObject
                 DiscoveryText = text;
                 DiscoveryButtonText = "Retry now";
                 var bar = text + " Open vATIS and make sure its websocket is enabled.";
+                if (state.Failures > _loggedFailures) // the first tick after each failed attempt: log every attempt, once
+                {
+                    _loggedFailures = state.Failures;
+                    AddLog($"{state.Problem ?? "Could not read the vATIS profile."} Attempt {state.Failures} failed; retrying in {seconds} second{(seconds == 1 ? "" : "s")}.");
+                }
                 if (!_discoveryAnnounced)
                 {
                     _discoveryAnnounced = true;
-                    AddLog(state.Problem is null ? "Could not read the vATIS profile; retrying." : $"{state.Problem} Retrying every {ProfileDiscovery.DefaultRetryDelay.TotalSeconds:0} seconds.");
                     Notify(Discovery, NoticeKind.Warning, bar);
                 }
                 else _notices.Update(Discovery, bar); // only if the user has not closed it
@@ -208,6 +213,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (found.Count == 0)
         {
+            _loggedFailures = 0;
             var message = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
             AddLog(message);
             Notify(DiscoveryEmpty, NoticeKind.Warning, message);
@@ -216,6 +222,11 @@ public sealed partial class MainViewModel : ObservableObject
         _notices.Resolve(DiscoveryEmpty);
 
         var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
+        var failedBefore = _loggedFailures;
+        _loggedFailures = 0;
+        AddLog($"Read your vATIS profile: {found.Count} D-ATIS airport{(found.Count == 1 ? "" : "s")}" +
+               (added.Count > 0 ? $", {added.Count} new" : "") +
+               (failedBefore > 0 ? $" (vATIS answered after {failedBefore} failed attempt{(failedBefore == 1 ? "" : "s")})" : "") + ".");
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
         foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
         if (added.Count > 0) Save();
@@ -229,7 +240,6 @@ public sealed partial class MainViewModel : ObservableObject
                 ? $"{stale} airport{(stale == 1 ? " is" : "s are")} no longer in your vATIS profile."
                 : "Your airport list matches your vATIS profile.";
         if (result is null) return;
-        AddLog(result);
         Notify(Discovery + "-result", NoticeKind.Info, result);
     }
 
