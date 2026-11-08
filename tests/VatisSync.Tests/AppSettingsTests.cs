@@ -100,4 +100,54 @@ public class AppSettingsTests : TempDirTests
         Assert.False(store.Save(new AppSettings()));
         Assert.Single(warnings);
     }
+
+    [Fact]
+    public void Frequency_settings_round_trip_as_readable_json()
+    {
+        var store = new SettingsStore(SettingsPath);
+        store.Save(new AppSettings
+        {
+            Frequencies = new()
+            {
+                [FrequencyRole.Ground] = new(FrequencyMode.Override, " 121.900 "),
+                [FrequencyRole.Ramp] = new(FrequencyMode.Remove),
+                [FrequencyRole.Tower] = new(FrequencyMode.Off), // Off is the default and is not stored
+            },
+        });
+
+        var json = File.ReadAllText(SettingsPath);
+        Assert.Contains("\"Ground\"", json);
+        Assert.Contains("\"Override\"", json);
+
+        var s = store.Load();
+        Assert.Equal(new FrequencySetting(FrequencyMode.Override, "121.900"), s.Frequencies[FrequencyRole.Ground]);
+        Assert.Equal(FrequencyMode.Remove, s.Frequencies[FrequencyRole.Ramp].Mode);
+        Assert.False(s.Frequencies.ContainsKey(FrequencyRole.Tower));
+    }
+
+    [Fact]
+    public void An_override_without_a_valid_frequency_is_kept_in_the_file_but_acts_as_off()
+    {
+        var s = new AppSettings
+        {
+            Frequencies = new()
+            {
+                [FrequencyRole.Ground] = new(FrequencyMode.Override, "12"),
+                [FrequencyRole.Tower] = new(FrequencyMode.Override, "118.5"),
+            },
+        };
+
+        Assert.Equal(FrequencyMode.Override, s.Normalized().Frequencies[FrequencyRole.Ground].Mode);
+        var options = s.ToSyncOptions().Frequencies;
+        Assert.Equal(FrequencyMode.Off, options[FrequencyRole.Ground].Mode);
+        Assert.Equal("118.5", options[FrequencyRole.Tower].Frequency);
+    }
+
+    [Fact]
+    public void Missing_or_unknown_frequency_entries_are_tolerated()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        File.WriteAllText(SettingsPath, "{ \"frequencies\": { \"ground\": { \"mode\": \"remove\" } } }");
+        Assert.Equal(FrequencyMode.Remove, new SettingsStore(SettingsPath).Load().Frequencies[FrequencyRole.Ground].Mode);
+    }
 }

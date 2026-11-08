@@ -391,6 +391,45 @@ public class SyncEngineTests
         Assert.Contains("HAZD WX INFO FOR SFO AREA AVBL FM FSS.", r.Vatis.Configures("KSFO")[^1].Conditions);
     }
 
+    private static DatisEntry FrequencyEntry() => new("KSFO", "combined",
+        "SFO ATIS INFO A 1156Z. 28010KT 10SM CLR. ILS RWY 28R IN USE. CTC GND ON 121.65 FOR TAXI. TWR FREQ 120.5. TWY B CLSD. ...ADVS YOU HAVE INFO A.",
+        Now.AddMinutes(-10).ToString("yyyy-MM-ddTHH:mm:ss.ffffff"));
+
+    [Fact]
+    public async Task Frequency_settings_remove_or_replace_frequencies_per_position()
+    {
+        var r = new Rig(Rig.Fast() with
+        {
+            Frequencies = new Dictionary<FrequencyRole, FrequencySetting>
+            {
+                [FrequencyRole.Ground] = new(FrequencyMode.Remove),
+                [FrequencyRole.Tower] = new(FrequencyMode.Override, "118.5"),
+            },
+        });
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [FrequencyEntry()];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal("ILS RWY 28R IN USE. TWR FREQ 118.5. TWY B CLSD.", r.Vatis.Configures("KSFO")[^1].Conditions.Trim());
+    }
+
+    [Fact]
+    public async Task Frequencies_are_left_alone_by_default()
+    {
+        var r = new Rig();
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [FrequencyEntry()];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Contains("CTC GND ON 121.65 FOR TAXI. TWR FREQ 120.5.", r.Vatis.Configures("KSFO")[^1].Conditions);
+    }
+
     [Fact]
     public async Task Letter_is_synced_only_once_across_refreshes()
     {

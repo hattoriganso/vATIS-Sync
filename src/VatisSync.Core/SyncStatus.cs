@@ -24,6 +24,10 @@ public sealed record SyncOptions
     /// <summary>Ids of built-in cleanup rules (see <see cref="BuiltInRules"/>) the user switched off.</summary>
     public IReadOnlyList<string> DisabledRules { get; init; } = [];
 
+    /// <summary>What to do with the frequencies of each position (see <see cref="FrequencyDetector"/>). Missing roles are Off.</summary>
+    public IReadOnlyDictionary<FrequencyRole, FrequencySetting> Frequencies { get; init; } =
+        new Dictionary<FrequencyRole, FrequencySetting>();
+
     /// <summary>How long to wait for vATIS to answer after launching it, per attempt.</summary>
     public TimeSpan StartupTimeout { get; init; } = TimeSpan.FromMinutes(5);
 

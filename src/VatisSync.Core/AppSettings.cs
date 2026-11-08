@@ -27,6 +27,9 @@ public sealed record AppSettings
     /// <summary>Built-in rule ids the user switched off.</summary>
     public List<string> DisabledRules { get; init; } = [];
 
+    /// <summary>Per-position handling of frequencies in the text. Roles not listed are Off.</summary>
+    public Dictionary<FrequencyRole, FrequencySetting> Frequencies { get; init; } = [];
+
     /// <summary>Start syncing as soon as the app opens.</summary>
     public bool StartSyncOnLaunch { get; init; }
 
@@ -49,6 +52,7 @@ public sealed record AppSettings
         MaxConnections = Math.Clamp(MaxConnections, 1, MaxConnectionsLimit),
         Airports = CleanIcaos(Airports),
         DisabledRules = (DisabledRules ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
+        Frequencies = CleanFrequencies(Frequencies),
     };
 
     public SyncOptions ToSyncOptions()
@@ -63,8 +67,18 @@ public sealed record AppSettings
             LaunchVatis = n.LaunchVatis,
             DisabledRules = n.DisabledRules,
             Approval = n.Approval,
+            Frequencies = n.Frequencies.ToDictionary(kv => kv.Key, kv => FrequencyDetector.Usable(kv.Value)),
         };
     }
+
+    /// <summary>Drops roles that are Off. An Override with no valid frequency yet is kept (the user may still be typing);
+    /// <see cref="ToSyncOptions"/> treats it as Off.</summary>
+    private static Dictionary<FrequencyRole, FrequencySetting> CleanFrequencies(
+        Dictionary<FrequencyRole, FrequencySetting>? frequencies) =>
+        (frequencies ?? [])
+            .Where(kv => kv.Value is not null)
+            .Where(kv => kv.Value.Mode != FrequencyMode.Off)
+            .ToDictionary(kv => kv.Key, kv => kv.Value with { Frequency = kv.Value.Frequency?.Trim() });
 
     private static List<string> CleanIcaos(IEnumerable<string>? airports) =>
         (airports ?? []).Select(a => a?.Trim().ToUpperInvariant() ?? "")

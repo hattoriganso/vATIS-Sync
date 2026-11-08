@@ -188,7 +188,7 @@ public sealed class SyncEngine(
 
             var contractions = DatisFormatter.BuildContractions(
                 await client.GetContractionsAsync(s.Key, ct).ConfigureAwait(false));
-            var text = DatisFormatter.Format(s.Key, fetch.Entries, now, stationRules, contractions);
+            var text = DatisFormatter.Format(s.Key, fetch.Entries, now, stationRules, contractions, options.Frequencies);
 
             if (connectedOnly && !text.IsAvailable)
             {

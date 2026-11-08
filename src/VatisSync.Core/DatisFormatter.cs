@@ -34,12 +34,14 @@ public static class DatisFormatter
     /// <param name="station">Station name as built by the client, e.g. "KSFO" or "KSFO_A".</param>
     /// <param name="replacements">Ordered (regex, replacement) pairs. "%r" in a replacement is removed.</param>
     /// <param name="contractions">(text, "@VARIABLE") pairs, longest text first.</param>
+    /// <param name="frequencies">What to do with the frequencies of each position; null or empty leaves them all alone.</param>
     public static FormattedAtis Format(
         string station,
         IReadOnlyList<DatisEntry>? entries,
         DateTimeOffset now,
         IReadOnlyList<KeyValuePair<string, string>>? replacements = null,
-        IReadOnlyList<KeyValuePair<string, string>>? contractions = null)
+        IReadOnlyList<KeyValuePair<string, string>>? contractions = null,
+        IReadOnlyDictionary<FrequencyRole, FrequencySetting>? frequencies = null)
     {
         if (entries is null || station.Length < 4) return FormattedAtis.Unavailable;
 
@@ -82,6 +84,9 @@ public static class DatisFormatter
                 }
             }
         }
+
+        // After the rules, so a frequency inside text they already removed is not seen twice.
+        datis = FrequencyDetector.Apply(datis, frequencies);
 
         datis = Regex.Replace(datis, @"\s+", " ").Trim();
 
