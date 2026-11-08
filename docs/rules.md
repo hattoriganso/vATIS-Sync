@@ -7,7 +7,7 @@ or a drone sighting. Rules remove or rewrite that text before it reaches vATIS.
 - [Built-in rules](#built-in-rules)
 - [Airport rules](#airport-rules)
 - [Deletion rules](#deletion-rules)
-- [Frequencies (planned)](#frequencies-planned)
+- [Frequencies](#frequencies)
 - [Changing or adding built-in rules](#changing-or-adding-built-in-rules)
 
 ## How text is processed
@@ -31,7 +31,7 @@ stray punctuation behind. This is also why a rule that matches a *sentence* does
 Built-in rules apply to every airport. They are defined in
 [`src/VatisSync.Core/Rules/builtin-rules.json`](../src/VatisSync.Core/Rules/builtin-rules.json) with an id, a name,
 a description and one or more patterns. The engine can switch any of them off by id (`SyncOptions.DisabledRules`);
-there is no settings screen yet, so end users cannot toggle them until the app is built.
+the **Rules** tab has a switch for each.
 
 ### What counts as a sentence
 
@@ -70,7 +70,7 @@ Removed in the test capture (15 sentences):
 Limits:
 - The keywords must appear. A sentence that only says `FLT SVC` (as opposed to `FLIGHT SERVICE`) is not caught on its
   own. KCHS is removed only because it also says `HAZARDOUS WX`.
-- KTEB's sentence includes a frequency (`122.2`). It is removed with the rest, and the future frequency feature will
+- KTEB's sentence includes a frequency (`122.2`). It is removed with the rest, and the frequency feature will
   not see it.
 
 ### `drone-laser-reports`
@@ -152,16 +152,42 @@ that station from then on. It compares words, not punctuation, and only acts on 
 are left alone. If you delete a contraction that vATIS inserted (for example `@TB`), the original words are
 what gets removed.
 
-## Frequencies (planned)
+## Frequencies
 
 Real ATIS often tells pilots to contact a position on a frequency, and on VATSIM that controller may not be online.
-A frequency feature is designed but not built. Each kind of position will get a mode:
+In the **Rules** tab each position gets a mode:
 
-- **Off**: keep the real-world text.
-- **On**: remove the instruction.
-- **Override**: replace the frequency with one you choose.
+- **Keep as is** (default): keep the real-world text.
+- **Remove**: remove the instruction.
+- **Replace with**: replace the frequency with one you type (for example `121.900`). Until a valid frequency is typed
+  the real text is kept.
 
-Replacement frequencies are always chosen by you. They are never guessed.
+Replacement frequencies are always chosen by you. They are never guessed or looked up.
+
+Positions: clearance delivery, ground, tower, departure, approach, ramp, metering, helicopter control, and
+*Other* for a frequency whose position the text does not name (KMIA's `RWY 9 FREQ 123.9`).
+
+### What counts as an instruction
+
+The detector is built into the app (not a regex rule). A frequency is the anchor: it finds frequencies between
+118.000 and 136.999, written as digits (`121.9`) or spelled out (`ONE THREE THREE POINT FIVE SEVEN`), and works out
+the position from the words around it. Text that names a position but has no frequency (`CONTACT CD 10 MIN PRIOR TO
+PUSH`) is never touched.
+
+- **Extent.** An instruction stops at commas, semicolons and the end of the sentence, so neighbours are left alone.
+  `DEPG RWY 28C, TWR FREQ 128.3` becomes `DEPG RWY 28C` when tower is on Remove. A trailing qualifier goes with
+  it (`CTC GND ON 121.9 FOR CLNC AND TAXI INSTRUCTIONS`, `GROUND ON 123.77 WEST OF RWY 17/35`).
+- **Several pairs in one sentence.** `TWR FREQ FOR RWY 10L IS 119.3 TWR FREQ FOR RWY 10R IS 120.2` is handled pair by
+  pair; a pair that names no position (`... NORTH 128.975 SOUTH 130.825`) takes the previous pair's position.
+- **Several positions in one instruction.** `CD AND GC COMBINED ON 123.9` changes only when every position named
+  has the same choice (both Remove, or both Replace with the same frequency). If only clearance is on Remove, the text
+  stays, because ground may still be online.
+- **Never changed:** the ATIS frequency itself (`DEPARTURE ATIS 118.125`) and Flight Service frequencies.
+  The Flight service built-in rule runs first and removes most of those sentences anyway.
+- **Known limit.** When an instruction is woven into a longer list, only its own clause goes: KPHX's
+  `CLNC DLVY FREQ 133.7, INT, E13 INT, ...` leaves `INT, E13 INT, ...` behind.
+
+Frequencies are applied after the built-in and airport rules and before your contractions.
 
 ## Changing or adding built-in rules
 
