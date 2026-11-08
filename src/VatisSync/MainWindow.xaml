@@ -22,7 +22,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
+                <Button Style="{StaticResource StartStopButton}" Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
                         FontSize="15" FontWeight="SemiBold" Padding="26,8" VerticalAlignment="Center"
                         AutomationProperties.Name="Start or stop syncing"/>
                 <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
