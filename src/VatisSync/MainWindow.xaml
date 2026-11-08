@@ -216,7 +216,7 @@
                             <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearLogCommand}"/>
                             <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <ListBox Grid.Row="2" x:Name="LogList" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
+                        <ListBox Grid.Row="2" x:Name="LogList" Padding="10,8" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
                     </Grid>
                 </DockPanel>
