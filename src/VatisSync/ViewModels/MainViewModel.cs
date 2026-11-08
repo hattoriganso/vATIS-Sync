@@ -14,7 +14,7 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private const int MaxLogLines = 500;
 
-    private readonly SettingsStore _store = new();
+    private readonly SettingsStore _store;
     private readonly Func<SyncOptions, SyncEngine> _engineFactory;
     private readonly Action<bool> _applyTray;
     private readonly Func<CancellationToken, Task<IReadOnlyList<VatisStation>>> _stationsSource;
@@ -33,8 +33,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null,
         IUpdateApprover? approver = null,
-        Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null)
+        Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null,
+        SettingsStore? store = null)
     {
+        _store = store ?? new SettingsStore();
         _stationsSource = stationsSource ?? EngineFactory.GetProfileStationsAsync;
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });

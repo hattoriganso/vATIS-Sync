@@ -1,6 +1,7 @@
 ﻿using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Threading;
 using VatisSync.ViewModels;
 
 namespace VatisSync;
@@ -20,11 +21,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm = vm;
 
-        // Keep the newest log line in view.
+        // Keep the newest log line in view. This must not touch the list while the collection is still announcing the
+        // change: the list may not have processed it yet, and measuring it then fails ("inconsistent with its items
+        // source"). So scroll once the dispatcher is free.
         ((INotifyCollectionChanged)_vm.LogLines).CollectionChanged += (_, e) =>
         {
-            if (e.Action == NotifyCollectionChangedAction.Add && LogList.Items.Count > 0)
-                LogList.ScrollIntoView(LogList.Items[^1]);
+            if (e.Action != NotifyCollectionChangedAction.Add) return;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                if (LogList.Items.Count > 0) LogList.ScrollIntoView(LogList.Items[^1]);
+            });
         };
     }
 
