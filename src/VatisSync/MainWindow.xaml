@@ -40,61 +40,108 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- LEFT: Overview pinned, then the airports -->
-            <DockPanel Grid.Column="0" Margin="0,0,0,0">
-                <StackPanel DockPanel.Dock="Bottom" Margin="8" >
-                    <TextBlock Text="Add an airport" Style="{StaticResource Hint}" Margin="0,0,0,4"/>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddAirportCommand}"
-                                MinWidth="50" Padding="8,3" Margin="6,0,0,0"/>
-                        <TextBox MaxLength="4" CharacterCasing="Upper" VerticalContentAlignment="Center"
-                                 Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
-                                 AutomationProperties.Name="Airport code">
-                            <TextBox.InputBindings>
-                                <KeyBinding Key="Return" Command="{Binding AddAirportCommand}"/>
-                            </TextBox.InputBindings>
-                        </TextBox>
-                    </DockPanel>
-                </StackPanel>
+            <!-- LEFT: the Overview tile, then the airports -->
+            <Border Grid.Column="0" Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                    BorderThickness="0,0,1,0"
+                    BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                <DockPanel>
+                    <!-- Overview: a tile of its own, not a row of the list -->
+                    <Border DockPanel.Dock="Top" Margin="8,10,8,0" Padding="12,10" CornerRadius="4" Cursor="Hand"
+                            AutomationProperties.Name="Overview">
+                        <Border.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding ShowOverviewCommand}"/>
+                        </Border.InputBindings>
+                        <Border.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#1F2937"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOverviewSelected}" Value="True">
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Resources>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="#C9D3E0"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOverviewSelected}" Value="True">
+                                        <Setter Property="Background" Value="#1F6FD6"/>
+                                        <Setter Property="BorderBrush" Value="#1F6FD6"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE80F;" FontSize="16"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Overview" FontWeight="SemiBold" FontSize="15"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Headline}" FontSize="12" Margin="24,2,0,0"/>
+                        </StackPanel>
+                    </Border>
 
-                <ListBox ItemsSource="{Binding Pages}" SelectedItem="{Binding SelectedPage}"
-                         BorderThickness="0,0,1,0" HorizontalContentAlignment="Stretch">
-                    <ListBox.Resources>
-                        <DataTemplate DataType="{x:Type vm:OverviewPage}">
-                            <TextBlock Text="Overview" FontWeight="SemiBold" Padding="4,6"/>
-                        </DataTemplate>
-                        <DataTemplate DataType="{x:Type vm:AirportViewModel}">
-                            <DockPanel Margin="4,6" Background="Transparent">
-                                <DockPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Remove from list and reset its settings" Click="OnRemoveAirport"/>
-                                    </ContextMenu>
-                                </DockPanel.ContextMenu>
-                                <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
-                                         Stroke="#16A34A" StrokeThickness="1.5">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="Transparent"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                    <Setter Property="Fill" Value="#16A34A"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock Text="{Binding Icao}"/>
-                            </DockPanel>
-                        </DataTemplate>
-                    </ListBox.Resources>
-                </ListBox>
-            </DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="AIRPORTS" FontSize="11" FontWeight="SemiBold"
+                               Style="{StaticResource Hint}" Margin="16,18,8,4"/>
+
+                    <StackPanel DockPanel.Dock="Bottom" Margin="8">
+                        <TextBlock Text="Add an airport" Style="{StaticResource Hint}" Margin="0,0,0,4"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddAirportCommand}"
+                                    MinWidth="50" Padding="8,3" Margin="6,0,0,0"/>
+                            <TextBox MaxLength="4" CharacterCasing="Upper" VerticalContentAlignment="Center"
+                                     Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="Airport code">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddAirportCommand}"/>
+                                </TextBox.InputBindings>
+                            </TextBox>
+                        </DockPanel>
+                    </StackPanel>
+
+                    <ListBox ItemsSource="{Binding Airports}" SelectedItem="{Binding SelectedAirport, Mode=TwoWay}"
+                             BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AirportViewModel}">
+                                <DockPanel Margin="4,5" Background="Transparent">
+                                    <DockPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Remove from list and reset its settings" Click="OnRemoveAirport"/>
+                                        </ContextMenu>
+                                    </DockPanel.ContextMenu>
+                                    <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
+                                             Stroke="#16A34A" StrokeThickness="1.5">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                        <Setter Property="Fill" Value="#16A34A"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding Icao}" FontSize="14"/>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
 
             <!-- RIGHT: the Overview, or the selected airport -->
             <Grid Grid.Column="1" Margin="16,12,16,12">
 
                 <!-- Overview: stations and log -->
                 <DockPanel Visibility="{Binding IsOverviewSelected, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock Text="Overview" FontSize="22" FontWeight="SemiBold" Foreground="#1F6FD6"/>
+                        <TextBlock Text="All your stations and the activity log" Style="{StaticResource Hint}"/>
+                    </StackPanel>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                         <TextBlock Text="Last sync: " Style="{StaticResource Hint}"/>
                         <TextBlock Text="{Binding LastSync}" Margin="0,0,24,0"/>
@@ -135,6 +182,7 @@
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Airport settings" Style="{StaticResource Hint}"/>
 
                                     <TextBlock Text="Stations" Style="{StaticResource Section}"/>
                                     <TextBlock Style="{StaticResource Hint}"

@@ -57,7 +57,6 @@ public sealed partial class MainViewModel : ObservableObject
         DefaultRules = new RuleSetEditor(_settings.DisabledRules, Save);
         DefaultFrequencies = new FrequencySetEditor(_settings.Frequencies, Save);
 
-        Pages.Add(Overview);
         var listed = _settings.KnownAirports.Concat(_settings.AirportOverrides.Keys).Concat(_settings.Airports)
             .Distinct().Order(StringComparer.Ordinal);
         foreach (var icao in listed) InsertAirport(NewAirportPage(icao));
@@ -71,20 +70,27 @@ public sealed partial class MainViewModel : ObservableObject
 
     public OverviewPage Overview { get; } = new();
 
-    /// <summary>The pinned Overview entry first, then the airports in alphabetical order.</summary>
-    public ObservableCollection<object> Pages { get; } = [];
+    /// <summary>The airports in alphabetical order. The Overview is not one of them: it has its own tile above the list.</summary>
+    public ObservableCollection<AirportViewModel> Airports { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedAirport), nameof(IsOverviewSelected), nameof(IsAirportSelected))]
     private object _selectedPage;
 
-    public AirportViewModel? SelectedAirport => SelectedPage as AirportViewModel;
+    /// <summary>The airport being shown, or null while the Overview is. Setting null (the list losing its selection) is ignored.</summary>
+    public AirportViewModel? SelectedAirport
+    {
+        get => SelectedPage as AirportViewModel;
+        set { if (value is not null) SelectedPage = value; }
+    }
+
     public bool IsOverviewSelected => SelectedPage is OverviewPage;
     public bool IsAirportSelected => SelectedPage is AirportViewModel;
 
-    [ObservableProperty] private string _newAirport = "";
+    [RelayCommand]
+    private void ShowOverview() => SelectedPage = Overview;
 
-    private IEnumerable<AirportViewModel> Airports => Pages.OfType<AirportViewModel>();
+    [ObservableProperty] private string _newAirport = "";
 
     private AirportViewModel NewAirportPage(string icao) => new(
         icao, _settings.AirportOverrides.GetValueOrDefault(icao),
@@ -92,9 +98,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void InsertAirport(AirportViewModel page)
     {
-        var index = 1;
-        while (index < Pages.Count && string.CompareOrdinal(((AirportViewModel)Pages[index]).Icao, page.Icao) < 0) index++;
-        Pages.Insert(index, page);
+        var index = 0;
+        while (index < Airports.Count && string.CompareOrdinal(Airports[index].Icao, page.Icao) < 0) index++;
+        Airports.Insert(index, page);
     }
 
     [RelayCommand]
@@ -123,7 +129,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (page is null) return;
         if (SelectedPage == page) SelectedPage = Overview;
-        Pages.Remove(page);
+        Airports.Remove(page);
         Save();
     }
 
