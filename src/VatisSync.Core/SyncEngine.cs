@@ -1,4 +1,4 @@
-namespace VatisSync.Core;
+﻿namespace VatisSync.Core;
 
 /// <summary>
 /// The sync loop, ported from main() / configure_atises() / connect_atises() in vATISLoad.py:
@@ -35,6 +35,8 @@ public sealed class SyncEngine(
 
     public event EventHandler<SyncStatus>? StatusChanged;
     public event Action<string>? Log;
+    /// <summary>Same lines as <see cref="Log"/>, with how serious each one is.</summary>
+    public event Action<string, LogKind>? LogEntry;
 
     // ---- start / stop (for the UI) ----
 
@@ -82,12 +84,12 @@ public sealed class SyncEngine(
                 }
                 catch (VatisUnavailableException ex)
                 {
-                    Info(Messages.Get(Msg.EngineUnreachableLog, new { reason = ex.Message }));
+                    Info(Messages.Get(Msg.EngineUnreachableLog, new { reason = ex.Message }), LogKind.Warning);
                     Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineUnreachable), isError: true);
                 }
                 catch (Exception ex)
                 {
-                    Info(Messages.Get(Msg.EngineUnexpectedLog, new { error = ex }));
+                    Info(Messages.Get(Msg.EngineUnexpectedLog, new { error = ex }), LogKind.Error);
                     Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineUnexpected), isError: true);
                 }
 
@@ -114,7 +116,7 @@ public sealed class SyncEngine(
         {
             var launched = launcher.EnsureRunning();
             if (launched == LaunchResult.NotFound)
-                Info(Messages.Get(Msg.EngineVatisNotFound));
+                Info(Messages.Get(Msg.EngineVatisNotFound), LogKind.Error);
         }
 
         Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineWaiting));
@@ -167,7 +169,7 @@ public sealed class SyncEngine(
 
         var fetch = await datis.FetchAsync(ct).ConfigureAwait(false);
         if (!fetch.Succeeded)
-            Info(Messages.Get(fetch.FromCache ? Msg.EngineDatisFailedCached : Msg.EngineDatisFailedNone, new { reason = fetch.Error }));
+            Info(Messages.Get(fetch.FromCache ? Msg.EngineDatisFailedCached : Msg.EngineDatisFailedNone, new { reason = fetch.Error }), LogKind.Warning);
         var now = _time.GetUtcNow();
 
         foreach (var s in stations)
@@ -257,7 +259,7 @@ public sealed class SyncEngine(
                 goto default;
             default:
                 _declined.Remove(key);
-                Info(Messages.Get(Msg.EngineApprovalApplied, new { station = key, summary = request.Summary }));
+                Info(Messages.Get(Msg.EngineApprovalApplied, new { station = key, summary = request.Summary }), LogKind.Success);
                 return true;
         }
     }
@@ -294,7 +296,7 @@ public sealed class SyncEngine(
             {
                 connected++;
                 letters.NoteConnected(s.Key);
-                Info(Messages.Get(Msg.EngineConnected, new { station = s.Key }));
+                Info(Messages.Get(Msg.EngineConnected, new { station = s.Key }), LogKind.Success);
             }
         }
     }
@@ -307,7 +309,7 @@ public sealed class SyncEngine(
         foreach (var s in connected.Skip(options.MaxConnections))
         {
             await client.DisconnectAtisAsync(s.Id, ct).ConfigureAwait(false);
-            Info(Messages.Get(Msg.EngineDisconnectedLimit, new { station = s.Key, limit = options.MaxConnections }));
+            Info(Messages.Get(Msg.EngineDisconnectedLimit, new { station = s.Key, limit = options.MaxConnections }), LogKind.Warning);
         }
     }
 
@@ -377,7 +379,11 @@ public sealed class SyncEngine(
         StatusChanged?.Invoke(this, status);
     }
 
-    private void Info(string message) => Log?.Invoke(message);
+    private void Info(string message, LogKind kind = LogKind.Info)
+    {
+        Log?.Invoke(message);
+        LogEntry?.Invoke(message, kind);
+    }
 
     /// <summary>
     /// Asks vATIS to apply the real-world ATIS letter once per station, and only during startup (the

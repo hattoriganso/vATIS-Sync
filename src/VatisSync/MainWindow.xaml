@@ -217,7 +217,48 @@
                             <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
                         <ListBox Grid.Row="2" x:Name="LogList" Padding="10,8" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:LogLine}">
+                                    <Border CornerRadius="3" Padding="6,1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Success">
+                                                        <Setter Property="Background" Value="#FFEAF6EE"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                                        <Setter Property="Background" Value="#FFFDF3DC"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Kind}" Value="Error">
+                                                        <Setter Property="Background" Value="#FFFBE9E9"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Text}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Success">
+                                                            <Setter Property="Foreground" Value="#FF15803D"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                                            <Setter Property="Foreground" Value="#FF9A5200"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Error">
+                                                            <Setter Property="Foreground" Value="#FFB42323"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
                 </DockPanel>
 

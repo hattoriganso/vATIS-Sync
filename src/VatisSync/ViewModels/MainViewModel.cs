@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -43,18 +43,18 @@ public sealed partial class MainViewModel : ObservableObject
         _preview = preview ?? EngineFactory.CreatePreviewBuilder();
         _store = store ?? new SettingsStore();
         _airportFiles = airportFiles ?? new AirportFileStore();
-        _airportFiles.Warning += m => OnUi(() => { AddLog(m); Notify("airports-folder", NoticeKind.Warning, m); });
+        _airportFiles.Warning += m => OnUi(() => { AddLog(m, LogKind.Warning); Notify("airports-folder", NoticeKind.Warning, m); });
         _discovery = new ProfileDiscovery(stationsSource ?? EngineFactory.GetProfileStationsAsync);
         _discovery.StateChanged += state => OnUi(() => OnDiscoveryState(state));
         _discovery.AirportsFound += airports => OnUi(() => OnAirportsFound(airports));
         _discovery.StationsFound += stations => OnUi(() => OnStationsFound(stations));
         _discovery.StationsWithoutPreset += stations => OnUi(() =>
-            AddLog(Messages.Get(Msg.DiscoveryNoPreset, new { count = stations.Count, stations = string.Join(", ", stations) })));
+            AddLog(Messages.Get(Msg.DiscoveryNoPreset, new { count = stations.Count, stations = string.Join(", ", stations) }), LogKind.Warning));
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
-        _store.Warning += m => OnUi(() => { AddLog(m); Notify("settings-file", NoticeKind.Warning, m); });
-        EngineFactory.ReplacementStore.Warning += m => OnUi(() => { AddLog(m); Notify("rules-file", NoticeKind.Warning, m); });
+        _store.Warning += m => OnUi(() => { AddLog(m, LogKind.Warning); Notify("settings-file", NoticeKind.Warning, m); });
+        EngineFactory.ReplacementStore.Warning += m => OnUi(() => { AddLog(m, LogKind.Warning); Notify("rules-file", NoticeKind.Warning, m); });
         _settings = _store.Load();
 
         IntervalMinutes = _settings.IntervalMinutes;
@@ -148,7 +148,7 @@ public sealed partial class MainViewModel : ObservableObject
         var firstLine = error.Message.Split('\n')[0].Trim();
         OnUi(() =>
         {
-            AddLog(Messages.Get(Msg.AppUnexpectedLog, new { type = error.GetType().Name, message = firstLine }));
+            AddLog(Messages.Get(Msg.AppUnexpectedLog, new { type = error.GetType().Name, message = firstLine }), LogKind.Error);
             Notify("unexpected-error", NoticeKind.Error,
                 logPath is null ? Messages.Get(Msg.AppUnexpectedNoFile) : Messages.Get(Msg.AppUnexpected, new { path = logPath }));
         });
@@ -200,7 +200,7 @@ public sealed partial class MainViewModel : ObservableObject
                 {
                     _loggedFailures = state.Failures;
                     AddLog(Messages.Get(Msg.DiscoveryAttemptFailed,
-                        new { problem = state.Problem ?? Messages.Get(Msg.DiscoveryProblem), attempt = state.Failures, seconds }));
+                        new { problem = state.Problem ?? Messages.Get(Msg.DiscoveryProblem), attempt = state.Failures, seconds }), LogKind.Warning);
                 }
                 if (!_discoveryAnnounced)
                 {
@@ -246,7 +246,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _loggedFailures = 0;
             var message = Messages.Get(Msg.DiscoveryEmpty);
-            AddLog(message);
+            AddLog(message, LogKind.Warning);
             Notify(DiscoveryEmpty, NoticeKind.Warning, message);
             return;
         }
@@ -255,7 +255,7 @@ public sealed partial class MainViewModel : ObservableObject
         var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
         var failedBefore = _loggedFailures;
         _loggedFailures = 0;
-        AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }));
+        AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }), LogKind.Success);
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
 
         var stale = Airports.Count(a => a.IsStale);
@@ -301,7 +301,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_settings.AirportOverrides.Count == 0 && _settings.KnownAirports.Count == 0) return;
         var imported = _airportFiles.ImportMissing(_settings.AirportOverrides);
-        if (imported > 0) AddLog(Messages.Get(Msg.AirportsImported, new { count = imported }));
+        if (imported > 0) AddLog(Messages.Get(Msg.AirportsImported, new { count = imported }), LogKind.Success);
         _settings = _settings with { AirportOverrides = [], KnownAirports = [] };
         _store.Save(_settings);
     }
@@ -340,7 +340,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _settingsNote = "";
 
     public ObservableCollection<StationRow> Stations { get; } = [];
-    public ObservableCollection<string> LogLines { get; } = [];
+    public ObservableCollection<LogLine> LogLines { get; } = [];
 
     // ---- settings ----
 
@@ -375,7 +375,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_loading) return;
         if (!StartupRegistration.Set(value))
         {
-            AddLog(Messages.Get(Msg.StartupFailed));
+            AddLog(Messages.Get(Msg.StartupFailed), LogKind.Error);
             _loading = true;
             StartWithWindows = StartupRegistration.IsEnabled();
             _loading = false;
@@ -431,7 +431,7 @@ public sealed partial class MainViewModel : ObservableObject
         var icao = NewConnectAirport.Trim().ToUpperInvariant();
         if (!IsIcao(icao))
         {
-            AddLog(Messages.Get(Msg.ConnectInvalidAirport, new { text = NewConnectAirport.Trim() }));
+            AddLog(Messages.Get(Msg.ConnectInvalidAirport, new { text = NewConnectAirport.Trim() }), LogKind.Warning);
             return;
         }
         if (!ConnectAirports.Contains(icao)) { ConnectAirports.Add(icao); Save(); }
@@ -462,7 +462,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         var engine = _engineFactory(OptionsForEngine());
         engine.StatusChanged += (_, s) => OnUi(() => ApplyStatus(s));
-        engine.Log += m => OnUi(() => AddLog(m));
+        engine.LogEntry += (m, kind) => OnUi(() => AddLog(m, kind));
         _engine = engine;
         engine.Start();
         SettingsNote = "";
@@ -551,16 +551,16 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
-            AddLog(Messages.Get(Msg.RulesOpenFailed, new { path, reason = ex.Message }));
+            AddLog(Messages.Get(Msg.RulesOpenFailed, new { path, reason = ex.Message }), LogKind.Error);
         }
     }
 
     [RelayCommand]
     private void ClearLog() => LogLines.Clear();
 
-    private void AddLog(string message)
+    private void AddLog(string message, LogKind kind = LogKind.Info)
     {
-        LogLines.Add($"{DateTime.Now:HH:mm:ss}  {message}");
+        LogLines.Add(new LogLine($"{DateTime.Now:HH:mm:ss}  {message}", kind));
         while (LogLines.Count > MaxLogLines) LogLines.RemoveAt(0);
     }
 
