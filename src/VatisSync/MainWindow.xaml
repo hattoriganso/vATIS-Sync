@@ -89,19 +89,11 @@
                     <TextBlock DockPanel.Dock="Top" Text="AIRPORTS" FontSize="11" FontWeight="SemiBold"
                                Style="{StaticResource Hint}" Margin="16,18,8,4"/>
 
-                    <StackPanel DockPanel.Dock="Bottom" Margin="8">
-                        <TextBlock Text="Add an airport" Style="{StaticResource Hint}" Margin="0,0,0,4"/>
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddAirportCommand}"
-                                    MinWidth="50" Padding="8,3" Margin="6,0,0,0"/>
-                            <TextBox MaxLength="4" CharacterCasing="Upper" VerticalContentAlignment="Center"
-                                     Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
-                                     AutomationProperties.Name="Airport code">
-                                <TextBox.InputBindings>
-                                    <KeyBinding Key="Return" Command="{Binding AddAirportCommand}"/>
-                                </TextBox.InputBindings>
-                            </TextBox>
-                        </DockPanel>
+                    <!-- Where the airports come from: the open vATIS profile -->
+                    <StackPanel DockPanel.Dock="Bottom" Margin="12,8,12,12">
+                        <TextBlock Text="{Binding DiscoveryText}" Style="{StaticResource Hint}" FontSize="12" Margin="0,0,0,6"/>
+                        <Button Content="{Binding DiscoveryButtonText}" Command="{Binding RetryDiscoveryCommand}"
+                                Padding="10,5" HorizontalAlignment="Left"/>
                     </StackPanel>
 
                     <Grid>
@@ -129,19 +121,36 @@
                                             </Style>
                                         </Ellipse.Style>
                                     </Ellipse>
-                                    <TextBlock Text="{Binding Icao}" FontSize="14"/>
+                                    <Button DockPanel.Dock="Right" MinWidth="22" Padding="3,0" Margin="4,0,0,0" VerticalAlignment="Center"
+                                            Background="Transparent" BorderThickness="0" ToolTip="Remove from the list"
+                                            AutomationProperties.Name="Remove airport"
+                                            Command="{Binding DataContext.RemoveAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE738;" FontSize="12" Foreground="#B45309"/>
+                                    </Button>
+                                    <TextBlock Text="{Binding Icao}" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsStale}" Value="True">
+                                                        <Setter Property="Foreground" Value="#B45309"/>
+                                                        <Setter Property="ToolTip" Value="Not in your current vATIS profile. Its settings are kept until you remove it."/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </DockPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <!-- Nothing listed yet: offer to read the airports from the open vATIS profile -->
+                    <!-- Nothing listed yet: they appear as soon as the profile can be read -->
                     <StackPanel Margin="12,6,12,0" VerticalAlignment="Top"
                                 Visibility="{Binding HasNoAirports, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock Text="No airports yet" FontWeight="SemiBold"/>
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,10"
-                                   Text="Read them from the profile you have open in vATIS (vATIS must be running), or add one below."/>
-                        <Button Content="{Binding GetAirportsButtonText}" Command="{Binding GetAirportsFromVatisCommand}"
-                                Padding="10,7" HorizontalAlignment="Stretch"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0"
+                                   Text="They appear here as soon as the app can read the profile open in vATIS."/>
                     </StackPanel>
                     </Grid>
                 </DockPanel>
@@ -197,6 +206,11 @@
                                 <StackPanel>
                                     <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
                                     <TextBlock Text="Airport settings" Style="{StaticResource Hint}"/>
+                                    <Border Background="#FEF3C7" BorderBrush="#D97706" BorderThickness="1" CornerRadius="3" Padding="10,6" Margin="0,8,0,0"
+                                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock TextWrapping="Wrap" Foreground="#1F2937"
+                                                   Text="This airport is not in your current vATIS profile. Its settings are kept, but nothing is synced for it. Use the minus button in the list to remove it."/>
+                                    </Border>
 
                                     <TextBlock Text="Stations" Style="{StaticResource Section}"/>
                                     <TextBlock Style="{StaticResource Hint}"

@@ -43,6 +43,9 @@ public sealed partial class AirportViewModel : ObservableObject
 
     [ObservableProperty] private bool _isConnected;
 
+    /// <summary>vATIS was read and this airport is not in the profile any more. It stays listed so its settings are not lost.</summary>
+    [ObservableProperty] private bool _isStale;
+
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CustomRules))]
     private bool _useDefaultRules;
 

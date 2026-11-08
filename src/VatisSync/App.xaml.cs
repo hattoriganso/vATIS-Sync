@@ -53,6 +53,7 @@ public partial class App : Application
 
         if (!_vm.ShouldStartHidden) _window.Show();
         _vm.StartIfConfigured();
+        _vm.StartDiscovery(); // read the airports from the open vATIS profile, retrying until vATIS answers
     }
 
     private void ListenForShowRequests()
@@ -100,7 +101,11 @@ public partial class App : Application
 
     private async Task ExitAppAsync()
     {
-        if (_vm is not null) await _vm.StopAsync();
+        if (_vm is not null)
+        {
+            await _vm.StopDiscoveryAsync();
+            await _vm.StopAsync();
+        }
         if (_window is not null) { _window.AllowClose = true; _window.Close(); }
         _tray?.Dispose();
         Shutdown();

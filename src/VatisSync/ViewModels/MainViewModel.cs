@@ -17,7 +17,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly SettingsStore _store;
     private readonly Func<SyncOptions, SyncEngine> _engineFactory;
     private readonly Action<bool> _applyTray;
-    private readonly Func<CancellationToken, Task<IReadOnlyList<VatisStation>>> _stationsSource;
+    private readonly ProfileDiscovery _discovery;
     private SyncEngine? _engine;
     private AppSettings _settings;
     private bool _loading = true;
@@ -37,7 +37,9 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsStore? store = null)
     {
         _store = store ?? new SettingsStore();
-        _stationsSource = stationsSource ?? EngineFactory.GetProfileStationsAsync;
+        _discovery = new ProfileDiscovery(stationsSource ?? EngineFactory.GetProfileStationsAsync);
+        _discovery.StateChanged += state => OnUi(() => OnDiscoveryState(state));
+        _discovery.AirportsFound += airports => OnUi(() => OnAirportsFound(airports));
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
@@ -104,12 +106,11 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasAirports => Airports.Count > 0;
     public bool HasNoAirports => Airports.Count == 0;
 
-    [ObservableProperty] private string _newAirport = "";
-
     // ---- messages along the bottom of the window ----
 
     private const string VatisUnreachable = "vatis-unreachable";
-    private const string FetchAirports = "fetch-airports";
+    private const string Discovery = "vatis-discovery";
+    private const string DiscoveryEmpty = "vatis-discovery-empty";
     private static readonly TimeSpan InfoLifetime = TimeSpan.FromSeconds(6);
 
     private readonly NoticeBoard _notices = new();
@@ -146,58 +147,91 @@ public sealed partial class MainViewModel : ObservableObject
         if (notice is not null) _notices.Dismiss(notice);
     }
 
-    // ---- get the airports from vATIS ----
+    // ---- the airports come from the open vATIS profile ----
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GetAirportsFromVatisCommand))]
-    private bool _isFetchingAirports;
+    private bool _discoveryAnnounced; // the warning has been shown once in this run of failures, so it is not re-shown if closed
+    private bool _manualRefresh;      // the user pressed the button, so say what the re-read found even when nothing changed
 
-    public string GetAirportsButtonText => IsFetchingAirports ? "Asking vATIS…" : "Get airports from vATIS";
+    [ObservableProperty] private string _discoveryText = "Looking for vATIS…";
+    [ObservableProperty] private string _discoveryButtonText = "Retry now";
 
-    partial void OnIsFetchingAirportsChanged(bool value) => OnPropertyChanged(nameof(GetAirportsButtonText));
+    /// <summary>Starts reading the vATIS profile, and keeps trying until vATIS answers. Read-only towards vATIS.</summary>
+    public void StartDiscovery() => _discovery.Start();
 
-    /// <summary>
-    /// Reads the stations of the profile open in vATIS and adds every airport that has a D-ATIS station to the list.
-    /// Read-only towards vATIS: it asks for the station list once and changes nothing there.
-    /// </summary>
-    [RelayCommand(CanExecute = nameof(CanGetAirports))]
-    private async Task GetAirportsFromVatis()
+    public Task StopDiscoveryAsync() => _discovery.StopAsync();
+
+    /// <summary>Tries now instead of waiting for the countdown (which then restarts if it fails), or re-reads the profile after a success.</summary>
+    [RelayCommand]
+    private void RetryDiscovery()
     {
-        IsFetchingAirports = true;
-        try
-        {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            var found = ProfileAirports.From(await _stationsSource(timeout.Token));
-            _notices.Resolve(FetchAirports); // vATIS answered, so an earlier failure no longer applies
-            if (found.Count == 0)
-            {
-                var message = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
-                AddLog(message);
-                Notify(FetchAirports, NoticeKind.Warning, message);
-                return;
-            }
+        _manualRefresh = true;
+        _discovery.RetryNow();
+    }
 
-            var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
-            foreach (var icao in added) InsertAirport(NewAirportPage(icao));
-            if (added.Count > 0) Save();
-            var result = added.Count > 0
-                ? $"Added {added.Count} airport{(added.Count == 1 ? "" : "s")} from vATIS."
-                : "Every D-ATIS airport in the open profile is already listed.";
-            AddLog(result);
-            Notify(FetchAirports, NoticeKind.Info, result);
-        }
-        catch (Exception ex) when (ex is VatisUnavailableException or OperationCanceledException)
+    private void OnDiscoveryState(DiscoveryState state)
+    {
+        switch (state.Phase)
         {
-            var message = "Could not reach vATIS. Open it, make sure its websocket is enabled, and try again.";
-            AddLog(message);
-            Notify(FetchAirports, NoticeKind.Error, message);
-        }
-        finally
-        {
-            IsFetchingAirports = false;
+            case DiscoveryPhase.Searching:
+                DiscoveryText = state.Failures == 0 ? "Looking for vATIS…" : "Trying vATIS again…";
+                if (state.Failures > 0) _notices.Update(Discovery, "Couldn't sync with vATIS. Trying again…");
+                break;
+
+            case DiscoveryPhase.Waiting:
+                var seconds = Math.Max(1, (int)Math.Ceiling(state.Remaining.TotalSeconds));
+                var text = $"Couldn't sync with vATIS, retrying in {seconds} second{(seconds == 1 ? "" : "s")}.";
+                DiscoveryText = text;
+                DiscoveryButtonText = "Retry now";
+                var bar = text + " Open vATIS and make sure its websocket is enabled.";
+                if (!_discoveryAnnounced)
+                {
+                    _discoveryAnnounced = true;
+                    AddLog(state.Problem is null ? "Could not read the vATIS profile; retrying." : $"{state.Problem} Retrying every {ProfileDiscovery.DefaultRetryDelay.TotalSeconds:0} seconds.");
+                    Notify(Discovery, NoticeKind.Warning, bar);
+                }
+                else _notices.Update(Discovery, bar); // only if the user has not closed it
+                break;
+
+            case DiscoveryPhase.Found:
+                _discoveryAnnounced = false;
+                _notices.Resolve(Discovery);
+                DiscoveryText = "Airports read from your vATIS profile.";
+                DiscoveryButtonText = "Refresh";
+                break;
         }
     }
 
-    private bool CanGetAirports() => !IsFetchingAirports;
+    private void OnAirportsFound(IReadOnlyList<string> found)
+    {
+        var manual = _manualRefresh;
+        _manualRefresh = false;
+
+        if (found.Count == 0)
+        {
+            var message = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
+            AddLog(message);
+            Notify(DiscoveryEmpty, NoticeKind.Warning, message);
+            return;
+        }
+        _notices.Resolve(DiscoveryEmpty);
+
+        var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
+        foreach (var icao in added) InsertAirport(NewAirportPage(icao));
+        foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
+        if (added.Count > 0) Save();
+
+        var stale = Airports.Count(a => a.IsStale);
+        string? result = null;
+        if (added.Count > 0)
+            result = $"Added {added.Count} airport{(added.Count == 1 ? "" : "s")} from your vATIS profile.";
+        else if (manual)
+            result = stale > 0
+                ? $"{stale} airport{(stale == 1 ? " is" : "s are")} no longer in your vATIS profile."
+                : "Your airport list matches your vATIS profile.";
+        if (result is null) return;
+        AddLog(result);
+        Notify(Discovery + "-result", NoticeKind.Info, result);
+    }
 
     private AirportViewModel NewAirportPage(string icao) => new(
         icao, _settings.AirportOverrides.GetValueOrDefault(icao),
@@ -210,27 +244,7 @@ public sealed partial class MainViewModel : ObservableObject
         Airports.Insert(index, page);
     }
 
-    [RelayCommand]
-    private void AddAirport()
-    {
-        var icao = NewAirport.Trim().ToUpperInvariant();
-        if (!IsIcao(icao))
-        {
-            AddLog($"'{NewAirport.Trim()}' is not a 4-letter airport code (for example KSFO).");
-            return;
-        }
-        var page = Airports.FirstOrDefault(a => a.Icao == icao);
-        if (page is null)
-        {
-            page = NewAirportPage(icao);
-            InsertAirport(page);
-            Save();
-        }
-        SelectedPage = page;
-        NewAirport = "";
-    }
-
-    /// <summary>Drops an airport from the list and forgets its own settings. A profile airport returns on the next sync.</summary>
+    /// <summary>Drops an airport from the list and forgets its own settings. One that is in the profile comes back the next time vATIS is read.</summary>
     [RelayCommand]
     private void RemoveAirport(AirportViewModel? page)
     {
@@ -427,7 +441,11 @@ public sealed partial class MainViewModel : ObservableObject
             added = true;
         }
         foreach (var page in Airports)
-            page.UpdateStations(rows.Where(r => string.Equals(r.Key[..4], page.Icao, StringComparison.OrdinalIgnoreCase)));
+        {
+            var mine = rows.Where(r => string.Equals(r.Key[..4], page.Icao, StringComparison.OrdinalIgnoreCase)).ToList();
+            page.UpdateStations(mine);
+            if (mine.Count > 0) page.IsStale = false;
+        }
         if (added) Save();
     }
 
