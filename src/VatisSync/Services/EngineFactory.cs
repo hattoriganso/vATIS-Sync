@@ -19,11 +19,12 @@ public static class EngineFactory
 
     private static LocalReplacementStore CreateStore() => new(LocalReplacementStore.DefaultUserFilePath);
 
-    public static SyncEngine Create(SyncOptions options) => new(
+    public static SyncEngine Create(SyncOptions options, IUpdateApprover? approver = null) => new(
         new VatisClient(new WebSocketVatisSocketFactory()),
         new DatisFetcher(Http),
         ReplacementStore,
         new CrcPositionResolver(),
         new VatisLauncher(),
-        options);
+        options,
+        approver: approver);
 }

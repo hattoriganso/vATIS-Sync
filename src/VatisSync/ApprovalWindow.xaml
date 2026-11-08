@@ -1,0 +1,54 @@
+<Window x:Class="VatisSync.ApprovalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Approve ATIS change" Width="780" Height="520" MinWidth="560" MinHeight="380"
+        Topmost="True" ShowInTaskbar="True" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" FontSize="13">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="Headline" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            <TextBlock x:Name="Summary" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="Now in vATIS" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" BorderThickness="1"
+                              BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                    <TextBlock x:Name="CurrentText" TextWrapping="Wrap" Padding="8" FontFamily="Consolas"/>
+                </ScrollViewer>
+            </DockPanel>
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="New (from the real-world D-ATIS)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" BorderThickness="1"
+                              BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                    <TextBlock x:Name="NewText" TextWrapping="Wrap" Padding="8" FontFamily="Consolas"/>
+                </ScrollViewer>
+            </DockPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="StopAskingButton" Click="StopAsking_Click" Padding="14,6" Margin="0,0,8,0"
+                        AutomationProperties.Name="Apply and stop asking for this station"/>
+                <Button Content="Keep current" Click="Keep_Click" Padding="14,6" Margin="0,0,8,0" IsCancel="True"/>
+                <Button Content="Apply update" Click="Apply_Click" Padding="18,6" IsDefault="True" FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Text="Keep current leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again."
+                       Margin="0,8,0,0" TextWrapping="Wrap" HorizontalAlignment="Right"
+                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+        </StackPanel>
+    </Grid>
+</Window>

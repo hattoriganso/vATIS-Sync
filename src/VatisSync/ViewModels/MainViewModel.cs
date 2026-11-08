@@ -8,6 +8,8 @@ using VatisSync.Services;
 
 namespace VatisSync.ViewModels;
 
+public sealed record ApprovalChoice(ApprovalMode Mode, string Label);
+
 public sealed record StationRow(string Key, string Connection, string Datis, string LastUpdated);
 
 public sealed partial class RuleToggle(string id, string name, string description, bool enabled, Action<RuleToggle> changed)
@@ -33,9 +35,17 @@ public sealed partial class MainViewModel : ObservableObject
     private AppSettings _settings;
     private bool _loading = true;
 
-    public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null)
+    public static IReadOnlyList<ApprovalChoice> ApprovalChoices { get; } =
+    [
+        new(ApprovalMode.RunwayChanges, "Ask me when the runways change"),
+        new(ApprovalMode.Always, "Ask me before any change"),
+        new(ApprovalMode.Never, "Apply changes automatically"),
+    ];
+
+    public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null,
+        IUpdateApprover? approver = null)
     {
-        _engineFactory = engineFactory ?? EngineFactory.Create;
+        _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
         _store.Warning += m => OnUi(() => AddLog(m));
@@ -46,6 +56,7 @@ public sealed partial class MainViewModel : ObservableObject
         MaxConnections = _settings.MaxConnections;
         AutoConnectActivePosition = _settings.AutoConnectActivePosition;
         LaunchVatis = _settings.LaunchVatis;
+        Approval = _settings.Approval;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
         CloseToTray = _settings.CloseToTray;
@@ -81,6 +92,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _maxConnections;
     [ObservableProperty] private bool _autoConnectActivePosition;
     [ObservableProperty] private bool _launchVatis;
+    [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
     [ObservableProperty] private bool _startSyncOnLaunch;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
@@ -95,6 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnMaxConnectionsChanged(int value) => Save();
     partial void OnAutoConnectActivePositionChanged(bool value) => Save();
     partial void OnLaunchVatisChanged(bool value) => Save();
+    partial void OnApprovalChanged(ApprovalMode value) => Save();
     partial void OnStartSyncOnLaunchChanged(bool value) => Save();
     partial void OnStartMinimizedChanged(bool value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
@@ -129,6 +142,7 @@ public sealed partial class MainViewModel : ObservableObject
         Airports = [.. Airports],
         AutoConnectActivePosition = AutoConnectActivePosition,
         LaunchVatis = LaunchVatis,
+        Approval = Approval,
         DisabledRules = Rules.Where(r => !r.Enabled).Select(r => r.Id).ToList(),
         StartSyncOnLaunch = StartSyncOnLaunch,
         StartWithWindows = StartWithWindows,

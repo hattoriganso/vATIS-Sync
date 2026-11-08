@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using H.NotifyIcon;
+using VatisSync.Services;
 using VatisSync.ViewModels;
 
 namespace VatisSync;
@@ -32,7 +33,12 @@ public partial class App : Application
         }
         ListenForShowRequests();
 
-        _vm = new MainViewModel(applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; });
+        var approver = new WpfUpdateApprover();
+        approver.Asked = request => _tray?.ShowNotification("ATIS change needs your approval",
+            $"{request.Station}: {request.Summary}");
+        _vm = new MainViewModel(
+            applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
+            approver: approver);
         _window = new MainWindow(_vm);
         CreateTray();
         _window.HiddenToTray += () =>

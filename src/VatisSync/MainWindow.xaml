@@ -1,6 +1,7 @@
 ﻿<Window x:Class="VatisSync.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:VatisSync.ViewModels"
         Title="vATIS-Sync" Width="640" Height="520" MinWidth="520" MinHeight="420"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" FontSize="13">
     <Window.Resources>
@@ -138,6 +139,13 @@
                               Content="Follow the position I last used in CRC when no airports are chosen"/>
                     <CheckBox IsChecked="{Binding LaunchVatis}" Margin="0,4"
                               Content="Open vATIS for me if it is not running"/>
+
+                    <TextBlock Text="Changes to a connected ATIS" Style="{StaticResource Section}"/>
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.ApprovalChoices}" DisplayMemberPath="Label"
+                              SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
+                              MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                               Text="Before a refresh changes the text of an ATIS you are connected to, you see what would change and decide. The first fill when you press Start never asks."/>
 
                     <TextBlock Text="This app" Style="{StaticResource Section}"/>
                     <CheckBox IsChecked="{Binding StartSyncOnLaunch}" Margin="0,4"
