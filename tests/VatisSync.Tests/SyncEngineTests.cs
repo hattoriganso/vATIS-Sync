@@ -129,6 +129,23 @@ public class SyncEngineTests
         "NOTICE TO AIRMEN. TWY C CLSD. ...ADVS YOU HAVE INFO A.",
         Now.AddMinutes(-10).ToString("yyyy-MM-ddTHH:mm:ss.ffffff"));
 
+    private sealed class FakeApprover(Func<ApprovalRequest, ApprovalDecision>? decide = null) : IUpdateApprover
+    {
+        private readonly object _l = new();
+        private readonly List<ApprovalRequest> _requests = [];
+
+        public Func<ApprovalRequest, ApprovalDecision> Decide { get; set; } = decide ?? (_ => ApprovalDecision.Apply);
+        public TaskCompletionSource? Block { get; set; }
+        public List<ApprovalRequest> Requests { get { lock (_l) return [.. _requests]; } }
+
+        public async Task<ApprovalDecision> RequestAsync(ApprovalRequest request, CancellationToken ct)
+        {
+            lock (_l) _requests.Add(request);
+            if (Block is { } b) await b.Task.WaitAsync(ct);
+            return Decide(request);
+        }
+    }
+
     private sealed class Rig
     {
         public FakeVatis Vatis { get; } = new();
@@ -137,11 +154,11 @@ public class SyncEngineTests
         public SyncEngine Engine { get; }
         public List<string> Logs { get; } = [];
 
-        public Rig(SyncOptions? options = null, CrcPosition? position = null)
+        public Rig(SyncOptions? options = null, CrcPosition? position = null, IUpdateApprover? approver = null)
         {
             options ??= Fast();
             Engine = new SyncEngine(Vatis, Datis, new NoReplacements(), new FakePosition(position),
-                Launcher, options, new FixedTime(Now));
+                Launcher, options, new FixedTime(Now), approver);
             Engine.Log += m => { lock (Logs) Logs.Add(m); };
         }
 
@@ -169,6 +186,158 @@ public class SyncEngineTests
     private static Task WaitIdle(Rig r) => WaitFor(() => r.Engine.Status.Phase == SyncPhase.Idle, "engine idle");
 
     // ---- tests ----
+
+    // ---- approval of flow changes ----
+
+    private static DatisEntry Conditions(string icao, string conditions) => new(icao, "combined",
+        icao[1..] + " ATIS INFO A 1156Z. 28010KT 10SM CLR. " + conditions +
+        " NOTICE TO AIRMEN. TWY C CLSD. ...ADVS YOU HAVE INFO A.",
+        Now.AddMinutes(-10).ToString("yyyy-MM-ddTHH:mm:ss.ffffff"));
+
+    private static Rig ApprovalRig(FakeApprover approver, ApprovalMode mode = ApprovalMode.RunwayChanges) =>
+        new(Rig.Fast() with { Approval = mode, Interval = TimeSpan.FromMilliseconds(40) }, approver: approver);
+
+    private static async Task StartedWith(Rig r, string conditions)
+    {
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [Conditions("KSFO", conditions)];
+        r.Engine.Start();
+        await WaitIdle(r);
+    }
+
+    private static Task WaitForText(Rig r, string text) =>
+        WaitFor(() => r.Vatis.StateOf("KSFO").Conditions.Contains(text), $"{text} to reach vATIS");
+
+    [Fact]
+    public async Task Taxiway_change_with_the_same_runways_is_applied_without_asking()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE. TWY B CLSD.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE. TWY D CLSD.")];
+        await WaitForText(r, "TWY D CLSD");
+        await r.Engine.StopAsync();
+
+        Assert.Empty(approver.Requests);
+    }
+
+    [Fact]
+    public async Task Runway_change_asks_and_applies_when_approved()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitForText(r, "RWY 10L");
+        await r.Engine.StopAsync();
+
+        var request = Assert.Single(approver.Requests);
+        Assert.Equal("KSFO", request.Station);
+        Assert.True(request.FlowChanged);
+        Assert.Contains("28R", request.CurrentFlow.Runways);
+        Assert.Contains("10L", request.NewFlow.Runways);
+        Assert.Contains("ILS RWY 28R", request.CurrentConditions);
+        Assert.Contains("ILS RWY 10L", request.NewConditions);
+    }
+
+    [Fact]
+    public async Task Declined_change_is_not_written_and_not_asked_again_for_the_same_text()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.KeepCurrent);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await Task.Delay(300); // several more refresh cycles at 40 ms
+        Assert.Single(approver.Requests);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions); // vATIS still has the old flow
+
+        // The real-world ATIS moves again: that is new text, so the controller is asked again.
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 2, "a second question for new text");
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task Apply_and_stop_asking_silences_the_station()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.ApplyAndStopAsking);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitForText(r, "RWY 10L");
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")];
+        await WaitForText(r, "RWY 1 IN USE");
+        await r.Engine.StopAsync();
+
+        Assert.Single(approver.Requests);
+    }
+
+    [Fact]
+    public async Task Always_mode_asks_even_when_only_a_taxiway_changed()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver, ApprovalMode.Always);
+        await StartedWith(r, "ILS RWY 28R IN USE. TWY B CLSD.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE. TWY D CLSD.")];
+        await WaitForText(r, "TWY D CLSD");
+        await r.Engine.StopAsync();
+
+        var request = Assert.Single(approver.Requests);
+        Assert.False(request.FlowChanged);
+    }
+
+    [Fact]
+    public async Task Never_mode_applies_runway_changes_without_asking()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver, ApprovalMode.Never);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitForText(r, "RWY 10L");
+        await r.Engine.StopAsync();
+
+        Assert.Empty(approver.Requests);
+    }
+
+    [Fact]
+    public async Task Startup_pass_never_asks_even_if_vatis_already_shows_a_different_flow()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver);
+        r.Vatis.Add("KSFO");
+        r.Vatis.Edit("KSFO", s => s.Conditions = "ILS RWY 10L IN USE.");
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE.")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Empty(approver.Requests);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions);
+    }
+
+    [Fact]
+    public async Task Stopping_while_waiting_for_an_answer_does_not_hang()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await r.Engine.StopAsync().WaitAsync(TimeSpan.FromSeconds(3));
+
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions); // never applied
+    }
+
+    // ---- other engine tests ----
 
     [Fact]
     public async Task Initial_pass_configures_connects_then_configures_again_with_letter_sync()

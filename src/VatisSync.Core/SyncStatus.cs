@@ -18,6 +18,9 @@ public sealed record SyncOptions
     public bool AutoConnectActivePosition { get; init; } = true;
     public bool LaunchVatis { get; init; } = true;
 
+    /// <summary>When the controller must approve changes to a connected ATIS.</summary>
+    public ApprovalMode Approval { get; init; } = ApprovalMode.RunwayChanges;
+
     /// <summary>Ids of built-in cleanup rules (see <see cref="BuiltInRules"/>) the user switched off.</summary>
     public IReadOnlyList<string> DisabledRules { get; init; } = [];
 

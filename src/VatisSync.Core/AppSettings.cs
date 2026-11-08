@@ -21,6 +21,9 @@ public sealed record AppSettings
     public bool AutoConnectActivePosition { get; init; } = true;
     public bool LaunchVatis { get; init; } = true;
 
+    /// <summary>When to ask the controller before a change reaches a connected ATIS.</summary>
+    public ApprovalMode Approval { get; init; } = ApprovalMode.RunwayChanges;
+
     /// <summary>Built-in rule ids the user switched off.</summary>
     public List<string> DisabledRules { get; init; } = [];
 
@@ -59,6 +62,7 @@ public sealed record AppSettings
             AutoConnectActivePosition = n.AutoConnectActivePosition,
             LaunchVatis = n.LaunchVatis,
             DisabledRules = n.DisabledRules,
+            Approval = n.Approval,
         };
     }
 

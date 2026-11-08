@@ -12,13 +12,19 @@ public sealed class SyncEngine(
     IActivePositionProvider positions,
     IVatisLauncher launcher,
     SyncOptions options,
-    TimeProvider? time = null)
+    TimeProvider? time = null,
+    IUpdateApprover? approver = null)
 {
     private static readonly string[] FollowedSuffixes = ["TWR", "GND", "DEL", "RMP"];
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly object _gate = new();
     private readonly Dictionary<string, StationStatus> _stations = [];
+
+    // Per sync session: text the controller declined (so it is not asked about again) and stations
+    // they chose to stop being asked about.
+    private readonly Dictionary<string, string> _declined = [];
+    private readonly HashSet<string> _noMoreAsking = [];
 
     private SyncStatus _status = SyncStatus.Initial;
     private CancellationTokenSource? _cts;
@@ -100,6 +106,8 @@ public sealed class SyncEngine(
     private async Task RunSessionAsync(CancellationToken ct)
     {
         _stations.Clear();
+        _declined.Clear();
+        _noMoreAsking.Clear();
         var letters = new LetterSync();
 
         Publish(SyncPhase.Starting, "Starting…");
@@ -188,6 +196,13 @@ public sealed class SyncEngine(
                 continue;
             }
 
+            if (connectedOnly && state.IsConnected &&
+                !await ApprovedAsync(s.Key, state, text, ct).ConfigureAwait(false))
+            {
+                Record(s.Key, state.IsConnected, text.IsAvailable);
+                continue;
+            }
+
             if (state.IsConnected) letters.NoteConnected(s.Key);
             var sync = letters.ShouldSync(s.Key, text.AirportConditions, state.IsConnected);
 
@@ -196,6 +211,49 @@ public sealed class SyncEngine(
             if (sync) letters.MarkSynced(s.Key);
 
             Record(s.Key, state.IsConnected, text.IsAvailable, now);
+        }
+    }
+
+    // ---- approval ----
+
+    /// <summary>
+    /// Decides whether a refresh may be written to a connected station. Only refreshes are checked: the
+    /// startup pass is something the controller asked for by pressing Start.
+    /// </summary>
+    private async Task<bool> ApprovedAsync(string key, VatisAtisState state, FormattedAtis text, CancellationToken ct)
+    {
+        if (options.Approval == ApprovalMode.Never || approver is null) return true;
+        if (_noMoreAsking.Contains(key)) return true;
+
+        var current = state.AirportConditions.Trim();
+        var updated = text.AirportConditions.Trim();
+        if (current.Length == 0 || current == updated) return true; // nothing live to protect / nothing changes
+
+        var flowChanged = FlowAnalyzer.FlowChanged(current, updated);
+        if (options.Approval == ApprovalMode.RunwayChanges && !flowChanged) return true;
+
+        // Declined before and the real-world text has not moved since: stay quiet and keep the current text.
+        var fingerprint = updated + "|" + text.Notams.Trim();
+        if (_declined.TryGetValue(key, out var seen) && seen == fingerprint) return false;
+
+        Publish(SyncPhase.Syncing, $"Waiting for your approval ({key})…");
+        var request = new ApprovalRequest(key, current, updated, flowChanged,
+            FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated));
+        var decision = await approver.RequestAsync(request, ct).ConfigureAwait(false);
+
+        switch (decision)
+        {
+            case ApprovalDecision.KeepCurrent:
+                _declined[key] = fingerprint;
+                Info($"{key}: kept the current ATIS ({request.Summary})");
+                return false;
+            case ApprovalDecision.ApplyAndStopAsking:
+                _noMoreAsking.Add(key);
+                goto default;
+            default:
+                _declined.Remove(key);
+                Info($"{key}: update approved ({request.Summary})");
+                return true;
         }
     }
 
