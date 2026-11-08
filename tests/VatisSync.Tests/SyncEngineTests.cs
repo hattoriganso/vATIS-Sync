@@ -237,6 +237,28 @@ public class SyncEngineTests
     }
 
     [Fact]
+    public async Task Letter_is_never_synced_after_startup_even_for_a_station_connected_later()
+    {
+        var r = new Rig(Rig.Fast() with { Airports = ["KSFO"], Interval = TimeSpan.FromMilliseconds(40) });
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK"); // not selected, so left disconnected at startup
+        r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        Assert.Single(r.Vatis.Configures("KSFO"), c => c.Sync); // startup syncs the letter once
+
+        // The controller connects KOAK by hand mid-session; it must be refreshed but its letter left alone.
+        r.Vatis.Edit("KOAK", s => s.Status = "Connected");
+        var before = r.Vatis.Configures("KOAK").Count;
+        await WaitFor(() => r.Vatis.Configures("KOAK").Count >= before + 2, "KOAK to be refreshed");
+        await r.Engine.StopAsync();
+
+        Assert.All(r.Vatis.Configures("KOAK"), c => Assert.False(c.Sync));
+        Assert.Single(r.Vatis.Configures("KSFO"), c => c.Sync);
+    }
+
+    [Fact]
     public async Task Only_stations_with_a_datis_preset_are_touched()
     {
         var r = new Rig();

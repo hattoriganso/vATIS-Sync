@@ -120,6 +120,7 @@ public sealed class SyncEngine(
         await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
         await ConnectAsync(letters, ct).ConfigureAwait(false);
         await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
+        letters.EndStartup(); // from here on vATIS advances its own letter; we only send text
 
         var snapshot = await SnapshotAsync(ct).ConfigureAwait(false);
         if (options.PostConnectDelay > TimeSpan.Zero)
@@ -315,18 +316,25 @@ public sealed class SyncEngine(
     private void Info(string message) => Log?.Invoke(message);
 
     /// <summary>
-    /// Asks vATIS to apply the real-world ATIS letter once per station, and only once the station can
-    /// accept it (syncAtisLetter is ignored until the station has connected to the ATIS hub).
+    /// Asks vATIS to apply the real-world ATIS letter once per station, and only during startup (the
+    /// initial pass), once the station can accept it (syncAtisLetter is ignored until the station has
+    /// connected to the ATIS hub). After startup the letter is never synced again: simulator weather
+    /// changes on its own schedule, so the controller advances the letter in vATIS and it may legitimately
+    /// differ from the real-world one.
     /// </summary>
     private sealed class LetterSync
     {
         private readonly HashSet<string> _synced = [];
         private readonly HashSet<string> _ready = [];
+        private bool _startupDone;
+
+        public void EndStartup() => _startupDone = true;
 
         public void NoteConnected(string station) => _ready.Add(station);
         public void MarkSynced(string station) => _synced.Add(station);
 
         public bool ShouldSync(string station, string airportConditions, bool connected) =>
+            !_startupDone &&
             airportConditions != FormattedAtis.NotAvailable &&
             !_synced.Contains(station) &&
             (connected || _ready.Contains(station));
