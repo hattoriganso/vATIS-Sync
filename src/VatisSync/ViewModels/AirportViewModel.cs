@@ -39,7 +39,8 @@ public sealed partial class AirportViewModel : ObservableObject
 
     public AirportViewModel(string icao, AirportSettings? own,
         Func<List<string>> defaultRules, Func<Dictionary<FrequencyRole, FrequencySetting>> defaultFrequencies,
-        Action changed)
+        Action changed,
+        Func<IReadOnlyList<string>, AirportRules, bool, CancellationToken, Task<PreviewResult>>? previewBuilder = null)
     {
         Icao = icao;
         _defaultRules = defaultRules;
@@ -50,6 +51,35 @@ public sealed partial class AirportViewModel : ObservableObject
         _useDefaultFrequencies = own?.UseDefaultFrequencies ?? true;
         Rules = new RuleSetEditor(_useDefaultRules ? defaultRules() : own!.DisabledRules, changed);
         Frequencies = new FrequencySetEditor(_useDefaultFrequencies ? defaultFrequencies() : own!.Frequencies, changed);
+
+        Summary = new AirportSummary(
+            () => StationKeys, EffectiveRules,
+            previewBuilder ?? ((_, _, _, _) => Task.FromResult(new PreviewResult([], null, false, default))));
+    }
+
+    /// <summary>The Summary tab: the D-ATIS text, how it differs from the real one, and where each station stands.</summary>
+    public AirportSummary Summary { get; }
+
+    /// <summary>Which tab is showing: 0 is Summary (the one people see first), 1 is Settings.</summary>
+    [ObservableProperty] private int _selectedTab;
+
+    /// <summary>This airport's stations as the vATIS profile lists them (KMIA_A, KMIA_D), set whenever the profile is read.</summary>
+    public IReadOnlyList<string> ProfileStations { get; set; } = [];
+
+    /// <summary>The stations the Summary is about: the profile's, else the ones the sync has seen. None once it is stale.</summary>
+    public IReadOnlyList<string> StationKeys =>
+        IsStale ? []
+        : ProfileStations.Count > 0 ? ProfileStations
+        : Stations.Select(s => s.Key).ToList();
+
+    /// <summary>This airport's rules and frequency settings with the defaults filled in, as the sync would use them.</summary>
+    public AirportRules EffectiveRules()
+    {
+        var own = ToSettings();
+        return new AirportRules(
+            own.UseDefaultRules ? _defaultRules() : own.DisabledRules,
+            (own.UseDefaultFrequencies ? _defaultFrequencies() : own.Frequencies)
+                .ToDictionary(kv => kv.Key, kv => FrequencyDetector.Usable(kv.Value)));
     }
 
     public string Icao { get; }
@@ -116,8 +146,10 @@ public sealed partial class AirportViewModel : ObservableObject
 
     public void UpdateStations(IEnumerable<StationRow> rows)
     {
+        var list = rows.ToList();
         Stations.Clear();
-        foreach (var r in rows) Stations.Add(r);
+        foreach (var r in list) Stations.Add(r);
+        Summary.SetEngineRows(list);
         IsConnected = Stations.Any(s => s.Connected);
         IsSynced = Stations.Any(s => s.Synced);
         OnPropertyChanged(nameof(HasNoStations));

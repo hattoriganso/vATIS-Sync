@@ -71,6 +71,48 @@
   "airport.stale": "Stale",
 
   // ---------------------------------------------------------------------------------------------------------------
+  // The Summary tab of an airport: the D-ATIS text and where it comes from
+  // ---------------------------------------------------------------------------------------------------------------
+
+  // While the real-world D-ATIS is being downloaded.
+  "summary.loading": "Loading the real-world D-ATIS…",
+
+  // When no station of the airport is in the vATIS profile (so there is nothing to show).
+  "summary.no-stations": "No D-ATIS station for this airport is in your vATIS profile right now, so there is nothing to show.",
+
+  // Next to a station when there is no real-world D-ATIS for it.   {station}
+  "summary.no-data": "There is no real-world D-ATIS for {station} right now.",
+
+  // Next to a station when the real-world D-ATIS is too old to use.   {station}
+  "summary.too-old": "The real-world D-ATIS for {station} is too old to use.",
+
+  // Yellow note when the download failed but an older copy is shown.   {reason}
+  "summary.fetch-failed-cached": "Couldn't get a fresh real-world D-ATIS ({reason}). Showing the last copy.",
+
+  // Yellow note when the download failed and there is nothing to show.   {reason}
+  "summary.fetch-failed": "Couldn't get the real-world D-ATIS ({reason}).",
+
+  // Under a station: which ATIS information this is and how old it is.   {letter}, {age}
+  "summary.source": "Information {letter}, issued {age}.",
+  "summary.source-no-letter": "Issued {age}.",
+
+  // The age in the line above.   {count}
+  "summary.age-now": "just now",
+  "summary.age-minutes": "{count} {count?minute|minutes} ago",
+  "summary.age-hours": "{count} {count?hour|hours} ago",
+
+  // Under each station's name on the Summary tab: where it stands in vATIS.   {time} is when the text was written
+  "summary.status-started": "Started: connected to the network.",
+  "summary.status-synced": "Synced: written into vATIS at {time}, not connected.",
+  "summary.status-ready": "Ready: nothing written into vATIS yet.",
+
+  // Small grey note under the tabs. Mentions what the preview leaves out.
+  "summary.note": "Shows what would be written into vATIS using this airport's settings. Your vATIS contractions and text you deleted by hand are not shown.",
+
+  // Shown for a section that has no text.
+  "summary.nothing": "(nothing)",
+
+  // ---------------------------------------------------------------------------------------------------------------
   // Syncing D-ATIS into vATIS (status line at the top, Log, and the bar when something goes wrong)
   // ---------------------------------------------------------------------------------------------------------------
 

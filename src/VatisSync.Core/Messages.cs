@@ -30,6 +30,24 @@ public static class Msg
     public static readonly MessageKey DiscoveryStale = new("discovery.stale", "count");
     public static readonly MessageKey DiscoveryMatches = new("discovery.matches");
 
+    // The Summary tab
+    public static readonly MessageKey SummaryLoading = new("summary.loading");
+    public static readonly MessageKey SummaryNoStations = new("summary.no-stations");
+    public static readonly MessageKey SummaryNoData = new("summary.no-data", "station");
+    public static readonly MessageKey SummaryTooOld = new("summary.too-old", "station");
+    public static readonly MessageKey SummaryFetchFailedCached = new("summary.fetch-failed-cached", "reason");
+    public static readonly MessageKey SummaryFetchFailed = new("summary.fetch-failed", "reason");
+    public static readonly MessageKey SummarySource = new("summary.source", "letter", "age");
+    public static readonly MessageKey SummarySourceNoLetter = new("summary.source-no-letter", "age");
+    public static readonly MessageKey SummaryAgeNow = new("summary.age-now");
+    public static readonly MessageKey SummaryAgeMinutes = new("summary.age-minutes", "count");
+    public static readonly MessageKey SummaryAgeHours = new("summary.age-hours", "count");
+    public static readonly MessageKey SummaryStatusStarted = new("summary.status-started");
+    public static readonly MessageKey SummaryStatusSynced = new("summary.status-synced", "time");
+    public static readonly MessageKey SummaryStatusReady = new("summary.status-ready");
+    public static readonly MessageKey SummaryNote = new("summary.note");
+    public static readonly MessageKey SummaryNothing = new("summary.nothing");
+
     // The status word under each airport in the list
     public static readonly MessageKey AirportReady = new("airport.ready");
     public static readonly MessageKey AirportSynced = new("airport.synced");

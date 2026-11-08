@@ -53,6 +53,12 @@ public sealed class ProfileDiscovery(
     public event Action<IReadOnlyList<string>>? AirportsFound;
 
     /// <summary>
+    /// Raised (from a background thread, right after <see cref="AirportsFound"/>) with the stations that have a D-ATIS preset, so
+    /// each airport's stations are known (KMIA_A and KMIA_D are two stations of one airport).
+    /// </summary>
+    public event Action<IReadOnlyList<VatisStation>>? StationsFound;
+
+    /// <summary>
     /// Raised (from a background thread, right after <see cref="AirportsFound"/>) when the profile has stations that were skipped
     /// because they have no preset named "D-ATIS". Never raised with an empty list.
     /// </summary>
@@ -138,6 +144,7 @@ public sealed class ProfileDiscovery(
             _failures = 0;
             Set(new DiscoveryState(DiscoveryPhase.Found));
             try { AirportsFound?.Invoke(airports); } catch { /* a listener's bug must not stop the loop */ }
+            try { StationsFound?.Invoke(stations.Where(s => s.HasDatisPreset && s.Name.Length >= 4).ToList()); } catch { /* same */ }
             if (skipped.Count > 0)
                 try { StationsWithoutPreset?.Invoke(skipped); } catch { /* same */ }
             return true;

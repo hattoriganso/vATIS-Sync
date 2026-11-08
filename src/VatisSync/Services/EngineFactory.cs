@@ -26,6 +26,9 @@ public static class EngineFactory
     public static Task<IReadOnlyList<VatisStation>> GetProfileStationsAsync(CancellationToken ct) =>
         new VatisClient(new WebSocketVatisSocketFactory()).GetStationsAsync(ct);
 
+    /// <summary>Builds what an airport's ATIS would be from the real-world D-ATIS, without touching vATIS (the Summary tab).</summary>
+    public static DatisPreviewBuilder CreatePreviewBuilder() => new(new DatisFetcher(Http), ReplacementStore);
+
     public static SyncEngine Create(SyncOptions options, IUpdateApprover? approver = null) => new(
         new VatisClient(new WebSocketVatisSocketFactory()),
         new DatisFetcher(Http),

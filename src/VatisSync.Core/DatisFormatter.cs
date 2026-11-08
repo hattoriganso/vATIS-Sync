@@ -128,7 +128,7 @@ public static class DatisFormatter
         return seen.OrderByDescending(kv => kv.Key.Length).ToList();
     }
 
-    private static bool TryParseUpdatedAt(string? s, out DateTimeOffset result)
+    internal static bool TryParseUpdatedAt(string? s, out DateTimeOffset result)
     {
         result = default;
         if (string.IsNullOrWhiteSpace(s)) return false;

@@ -35,6 +35,42 @@ public static class WordDiff
         return (oldWords, newWords);
     }
 
+    /// <summary>
+    /// One combined comparison: words in both texts are <see cref="DiffKind.Same"/>, words only in the old text are
+    /// <see cref="DiffKind.Removed"/>, words only in the new text are <see cref="DiffKind.Added"/>. Neighbouring words of the
+    /// same kind are joined into one segment, separated by single spaces.
+    /// </summary>
+    public static IReadOnlyList<DiffSegment> Unified(string? oldText, string? newText)
+    {
+        var a = Split(oldText);
+        var b = Split(newText);
+
+        var lcs = new int[a.Length + 1, b.Length + 1];
+        for (var i = a.Length - 1; i >= 0; i--)
+            for (var j = b.Length - 1; j >= 0; j--)
+                lcs[i, j] = a[i] == b[j] ? lcs[i + 1, j + 1] + 1 : Math.Max(lcs[i + 1, j], lcs[i, j + 1]);
+
+        var segments = new List<DiffSegment>();
+        void Add(string word, DiffKind kind)
+        {
+            if (segments.Count > 0 && segments[^1].Kind == kind)
+                segments[^1] = segments[^1] with { Text = segments[^1].Text + " " + word };
+            else
+                segments.Add(new DiffSegment(word, kind));
+        }
+
+        int x = 0, y = 0;
+        while (x < a.Length && y < b.Length)
+        {
+            if (a[x] == b[y]) { Add(a[x], DiffKind.Same); x++; y++; }
+            else if (lcs[x + 1, y] >= lcs[x, y + 1]) Add(a[x++], DiffKind.Removed);
+            else Add(b[y++], DiffKind.Added);
+        }
+        while (x < a.Length) Add(a[x++], DiffKind.Removed);
+        while (y < b.Length) Add(b[y++], DiffKind.Added);
+        return segments;
+    }
+
     private static string[] Split(string? text) =>
         (text ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 }

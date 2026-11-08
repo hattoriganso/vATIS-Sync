@@ -19,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly Action<bool> _applyTray;
     private readonly ProfileDiscovery _discovery;
     private readonly AirportFileStore _airportFiles;
+    private readonly DatisPreviewBuilder _preview;
     private SyncEngine? _engine;
     private AppSettings _settings;
     private bool _loading = true;
@@ -36,14 +37,17 @@ public sealed partial class MainViewModel : ObservableObject
         IUpdateApprover? approver = null,
         Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null,
         SettingsStore? store = null,
-        AirportFileStore? airportFiles = null)
+        AirportFileStore? airportFiles = null,
+        DatisPreviewBuilder? preview = null)
     {
+        _preview = preview ?? EngineFactory.CreatePreviewBuilder();
         _store = store ?? new SettingsStore();
         _airportFiles = airportFiles ?? new AirportFileStore();
         _airportFiles.Warning += m => OnUi(() => { AddLog(m); Notify("airports-folder", NoticeKind.Warning, m); });
         _discovery = new ProfileDiscovery(stationsSource ?? EngineFactory.GetProfileStationsAsync);
         _discovery.StateChanged += state => OnUi(() => OnDiscoveryState(state));
         _discovery.AirportsFound += airports => OnUi(() => OnAirportsFound(airports));
+        _discovery.StationsFound += stations => OnUi(() => OnStationsFound(stations));
         _discovery.StationsWithoutPreset += stations => OnUi(() =>
             AddLog(Messages.Get(Msg.DiscoveryNoPreset, new { count = stations.Count, stations = string.Join(", ", stations) })));
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
@@ -95,6 +99,11 @@ public sealed partial class MainViewModel : ObservableObject
     private object _selectedPage;
 
     /// <summary>The airport being shown, or null while the Overview is. Setting null (the list losing its selection) is ignored.</summary>
+    partial void OnSelectedPageChanged(object value)
+    {
+        if (value is AirportViewModel airport) airport.Summary.EnsureFresh();
+    }
+
     public AirportViewModel? SelectedAirport
     {
         get => SelectedPage as AirportViewModel;
@@ -210,6 +219,20 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>Each airport's stations from the profile (KMIA_A and KMIA_D), which the Summary tab is about.</summary>
+    private void OnStationsFound(IReadOnlyList<VatisStation> stations)
+    {
+        var byAirport = stations
+            .GroupBy(s => s.Name[..4].ToUpperInvariant())
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(s => s.Key).Distinct().Order(StringComparer.Ordinal).ToList());
+        foreach (var page in Airports)
+        {
+            page.ProfileStations = byAirport.GetValueOrDefault(page.Icao) ?? [];
+            page.Summary.MarkDirty();
+        }
+        SelectedAirport?.Summary.EnsureFresh();
+    }
+
     private void OnAirportsFound(IReadOnlyList<string> found)
     {
         var manual = _manualRefresh;
@@ -253,7 +276,8 @@ public sealed partial class MainViewModel : ObservableObject
         page = new AirportViewModel(
             icao, _airportFiles.Load(icao),
             () => DefaultRules.Disabled, () => DefaultFrequencies.ToDictionary(),
-            () => SaveAirport(page!));
+            () => SaveAirport(page!),
+            (keys, rules, force, ct) => _preview.BuildAsync(keys, rules, force, ct));
         return page;
     }
 
@@ -263,6 +287,10 @@ public sealed partial class MainViewModel : ObservableObject
         if (_loading) return;
         if (_airportFiles.Save(page.Icao, page.ToSettings()))
             SettingsNote = IsRunning ? Messages.Get(Msg.SettingsApplyNextStart) : "";
+
+        // The summary shows the effect of these settings, so it follows them.
+        page.Summary.MarkDirty();
+        if (ReferenceEquals(page, SelectedAirport)) page.Summary.ScheduleRefresh();
     }
 
     /// <summary>
@@ -388,6 +416,10 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = Current.Normalized();
         _store.Save(_settings);
         _applyTray(CloseToTray);
+
+        // Airports that follow the defaults show their effect in the summary, so every summary is out of date now.
+        foreach (var airport in Airports) airport.Summary.MarkDirty();
+        SelectedAirport?.Summary.ScheduleRefresh();
         SettingsNote = IsRunning ? Messages.Get(Msg.SettingsApplyNextStart) : "";
     }
 
