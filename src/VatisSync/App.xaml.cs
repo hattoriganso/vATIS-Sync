@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using H.NotifyIcon;
+using VatisSync.Core;
 using VatisSync.Services;
 using VatisSync.ViewModels;
 
@@ -17,10 +18,12 @@ public partial class App : Application
     private TaskbarIcon? _tray;
     private MainWindow? _window;
     private MainViewModel? _vm;
+    private readonly ErrorLog _errorLog = new();
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        new SafetyNet(this, _errorLog, () => _vm).Install();
 
         _mutex = new Mutex(initiallyOwned: true, InstanceName, out var isFirst);
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);

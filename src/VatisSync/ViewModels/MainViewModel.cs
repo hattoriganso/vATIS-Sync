@@ -125,6 +125,21 @@ public sealed partial class MainViewModel : ObservableObject
         _ = Task.Delay(InfoLifetime).ContinueWith(_ => OnUi(() => _notices.Dismiss(notice)), TaskScheduler.Default);
     }
 
+    /// <summary>
+    /// Tells the user about an error nothing else caught. The app carries on; the full details are in the error log.
+    /// Safe to call from any thread.
+    /// </summary>
+    public void ReportUnexpectedError(Exception error, string? logPath)
+    {
+        var firstLine = error.Message.Split('\n')[0].Trim();
+        var saved = logPath is null ? "" : $" Details are saved in {logPath}.";
+        OnUi(() =>
+        {
+            AddLog($"Unexpected error ({error.GetType().Name}): {firstLine}");
+            Notify("unexpected-error", NoticeKind.Error, $"Something went wrong, but the app kept running: {firstLine}{saved}");
+        });
+    }
+
     [RelayCommand]
     private void DismissNotice(Notice? notice)
     {
