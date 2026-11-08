@@ -19,6 +19,13 @@ public static class EngineFactory
 
     private static LocalReplacementStore CreateStore() => new(LocalReplacementStore.DefaultUserFilePath);
 
+    /// <summary>
+    /// Asks the running vATIS for the stations of the profile that is open. Read-only: it does not start vATIS
+    /// and changes nothing in it. Throws <see cref="VatisUnavailableException"/> if vATIS cannot be reached.
+    /// </summary>
+    public static Task<IReadOnlyList<VatisStation>> GetProfileStationsAsync(CancellationToken ct) =>
+        new VatisClient(new WebSocketVatisSocketFactory()).GetStationsAsync(ct);
+
     public static SyncEngine Create(SyncOptions options, IUpdateApprover? approver = null) => new(
         new VatisClient(new WebSocketVatisSocketFactory()),
         new DatisFetcher(Http),

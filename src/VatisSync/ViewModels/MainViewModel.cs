@@ -17,6 +17,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly SettingsStore _store = new();
     private readonly Func<SyncOptions, SyncEngine> _engineFactory;
     private readonly Action<bool> _applyTray;
+    private readonly Func<CancellationToken, Task<IReadOnlyList<VatisStation>>> _stationsSource;
     private SyncEngine? _engine;
     private AppSettings _settings;
     private bool _loading = true;
@@ -31,8 +32,10 @@ public sealed partial class MainViewModel : ObservableObject
     public static IReadOnlyList<FrequencyModeChoice> FrequencyModeChoices => FrequencySetEditor.ModeChoices;
 
     public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null,
-        IUpdateApprover? approver = null)
+        IUpdateApprover? approver = null,
+        Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null)
     {
+        _stationsSource = stationsSource ?? EngineFactory.GetProfileStationsAsync;
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
@@ -62,6 +65,12 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var icao in listed) InsertAirport(NewAirportPage(icao));
         _selectedPage = Overview;
 
+        Airports.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasAirports));
+            OnPropertyChanged(nameof(HasNoAirports));
+        };
+
         _loading = false;
         ApplyStatus(SyncStatus.Initial);
     }
@@ -90,7 +99,57 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowOverview() => SelectedPage = Overview;
 
+    public bool HasAirports => Airports.Count > 0;
+    public bool HasNoAirports => Airports.Count == 0;
+
     [ObservableProperty] private string _newAirport = "";
+
+    // ---- get the airports from vATIS ----
+
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GetAirportsFromVatisCommand))]
+    private bool _isFetchingAirports;
+
+    /// <summary>What happened the last time the airports were requested from vATIS. Empty until then.</summary>
+    [ObservableProperty] private string _airportsMessage = "";
+
+    /// <summary>
+    /// Reads the stations of the profile open in vATIS and adds every airport that has a D-ATIS station to the list.
+    /// Read-only towards vATIS: it asks for the station list once and changes nothing there.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanGetAirports))]
+    private async Task GetAirportsFromVatis()
+    {
+        IsFetchingAirports = true;
+        AirportsMessage = "Asking vATIS…";
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            var found = ProfileAirports.From(await _stationsSource(timeout.Token));
+            if (found.Count == 0)
+            {
+                AirportsMessage = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
+                return;
+            }
+
+            var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
+            foreach (var icao in added) InsertAirport(NewAirportPage(icao));
+            if (added.Count > 0) Save();
+            AirportsMessage = added.Count > 0
+                ? $"Added {added.Count} airport{(added.Count == 1 ? "" : "s")} from vATIS."
+                : "Every D-ATIS airport in the open profile is already listed.";
+        }
+        catch (Exception ex) when (ex is VatisUnavailableException or OperationCanceledException)
+        {
+            AirportsMessage = "Could not reach vATIS. Open it, make sure its websocket is enabled, and try again.";
+        }
+        finally
+        {
+            IsFetchingAirports = false;
+            AddLog(AirportsMessage);
+        }
+    }
+
+    private bool CanGetAirports() => !IsFetchingAirports;
 
     private AirportViewModel NewAirportPage(string icao) => new(
         icao, _settings.AirportOverrides.GetValueOrDefault(icao),

@@ -88,6 +88,17 @@
                                Style="{StaticResource Hint}" Margin="16,18,8,4"/>
 
                     <StackPanel DockPanel.Dock="Bottom" Margin="8">
+                        <TextBlock Text="{Binding AirportsMessage}" FontSize="12" Margin="0,0,0,8">
+                            <TextBlock.Resources>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Resources>
+                        </TextBlock>
                         <TextBlock Text="Add an airport" Style="{StaticResource Hint}" Margin="0,0,0,4"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddAirportCommand}"
@@ -102,7 +113,9 @@
                         </DockPanel>
                     </StackPanel>
 
+                    <Grid>
                     <ListBox ItemsSource="{Binding Airports}" SelectedItem="{Binding SelectedAirport, Mode=TwoWay}"
+                             Visibility="{Binding HasAirports, Converter={StaticResource BoolToVisibility}}"
                              BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:AirportViewModel}">
@@ -130,6 +143,16 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                    <!-- Nothing listed yet: offer to read the airports from the open vATIS profile -->
+                    <StackPanel Margin="12,6,12,0" VerticalAlignment="Top"
+                                Visibility="{Binding HasNoAirports, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="No airports yet" FontWeight="SemiBold"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,10"
+                                   Text="Read them from the profile you have open in vATIS (vATIS must be running), or add one below."/>
+                        <Button Content="Get airports from vATIS" Command="{Binding GetAirportsFromVatisCommand}"
+                                Padding="10,7" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                    </Grid>
                 </DockPanel>
             </Border>
 
