@@ -23,24 +23,33 @@ public partial class ApprovalWindow : Window
         StopAskingButton.Content = $"Apply, and stop asking for {request.Station}";
 
         var (oldWords, newWords) = WordDiff.Compare(request.CurrentConditions, request.NewConditions);
-        Fill(CurrentText, oldWords);
-        Fill(NewText, newWords);
+        Fill(CurrentText, oldWords, "ErrorText", "ErrorWash");
+        Fill(NewText, newWords, "SuccessText", "SuccessWash");
     }
 
-    private static void Fill(System.Windows.Controls.TextBlock target, IReadOnlyList<DiffWord> words)
+    /// <summary>
+    /// Writes the words, with each run of changed words highlighted as one phrase (the spaces between them included, the one
+    /// after the last left out so the highlight ends at the text). Colors come from the palette.
+    /// </summary>
+    private static void Fill(System.Windows.Controls.TextBlock target, IReadOnlyList<DiffWord> words, string textKey, string washKey)
     {
         target.Inlines.Clear();
-        var highlight = new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0x82));
-        foreach (var w in words)
+        for (var i = 0; i < words.Count; i++)
         {
-            var run = new Run(w.Text + " ");
-            if (w.Changed)
+            if (!words[i].Changed)
             {
-                run.Background = highlight;
-                run.Foreground = Brushes.Black;
-                run.FontWeight = FontWeights.SemiBold;
+                target.Inlines.Add(new Run(words[i].Text + " "));
+                continue;
             }
+
+            var phrase = new List<string>();
+            while (i < words.Count && words[i].Changed) phrase.Add(words[i++].Text);
+            i--;
+            var run = new Run(string.Join(" ", phrase)) { FontWeight = FontWeights.SemiBold };
+            run.SetResourceReference(TextElement.ForegroundProperty, textKey);
+            run.SetResourceReference(TextElement.BackgroundProperty, washKey);
             target.Inlines.Add(run);
+            target.Inlines.Add(new Run(" "));
         }
     }
 
