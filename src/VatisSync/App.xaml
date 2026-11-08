@@ -301,7 +301,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="{Binding Name}"/>
-                    <TextBlock Text="{Binding Example}" Style="{StaticResource Hint}" FontSize="11"/>
+                    <TextBlock Text="{Binding Example}" Style="{StaticResource Hint}" FontSize="12"/>
                 </StackPanel>
                 <ComboBox Grid.Column="1" VerticalAlignment="Top"
                           ItemsSource="{x:Static vm:MainViewModel.FrequencyModeChoices}"
