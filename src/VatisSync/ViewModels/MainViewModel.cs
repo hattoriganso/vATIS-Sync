@@ -213,6 +213,10 @@ public sealed partial class MainViewModel : ObservableObject
         var manual = _manualRefresh;
         _manualRefresh = false;
 
+        // Whatever vATIS reported, an airport it did not report is no longer in the profile. This includes a profile with no
+        // D-ATIS stations at all: every listed airport is then stale, and the warning below explains why.
+        foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
+
         if (found.Count == 0)
         {
             _loggedFailures = 0;
@@ -228,7 +232,6 @@ public sealed partial class MainViewModel : ObservableObject
         _loggedFailures = 0;
         AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }));
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
-        foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
 
         var stale = Airports.Count(a => a.IsStale);
         string? result = null;
