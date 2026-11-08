@@ -6,7 +6,7 @@ using VatisSync.ViewModels;
 
 namespace VatisSync;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly MainViewModel _vm;
 

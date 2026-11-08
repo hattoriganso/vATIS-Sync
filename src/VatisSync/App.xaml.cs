@@ -23,6 +23,11 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        Wpf.Ui.Appearance.ApplicationThemeManager.ApplySystemTheme();
+        // A fixed blue, so the app looks the same whatever accent color Windows uses.
+        Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(
+            System.Windows.Media.Color.FromRgb(0x1F, 0x6F, 0xD6),
+            Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme());
         new SafetyNet(this, _errorLog, () => _vm).Install();
 
         _mutex = new Mutex(initiallyOwned: true, InstanceName, out var isFirst);
@@ -43,6 +48,7 @@ public partial class App : Application
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
             approver: approver);
         _window = new MainWindow(_vm);
+        Wpf.Ui.Appearance.SystemThemeWatcher.Watch(_window);
         CreateTray();
         _window.HiddenToTray += () =>
         {

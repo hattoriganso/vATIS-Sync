@@ -10,7 +10,7 @@ namespace VatisSync.Core;
 /// the newest <c>Profiles\*.json</c> gives the ARTCC and last position id, and
 /// <c>ARTCCs\&lt;ARTCC&gt;.json</c> maps that id to a callsign. Read-only.
 /// </summary>
-public sealed class CrcPositionResolver : IActivePositionProvider
+public sealed class StopCrcPositionResolver : IActivePositionProvider
 {
     private static readonly DateTimeOffset Epoch = new(2020, 1, 1, 8, 0, 0, TimeSpan.Zero);
 

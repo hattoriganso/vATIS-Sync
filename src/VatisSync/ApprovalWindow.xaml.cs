@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 using VatisSync.Core;
@@ -6,7 +6,7 @@ using VatisSync.Core;
 namespace VatisSync;
 
 /// <summary>Shows what a refresh would change on a connected ATIS and lets the controller decide.</summary>
-public partial class ApprovalWindow : Window
+public partial class ApprovalWindow : Wpf.Ui.Controls.FluentWindow
 {
     private bool _answered;
 
