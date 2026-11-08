@@ -4,7 +4,25 @@ using VatisSync.Core;
 
 namespace VatisSync.ViewModels;
 
-public sealed record StationRow(string Key, string Connection, string Datis, string LastUpdated);
+/// <param name="Connected">The station is connected to the network (the ATIS is live).</param>
+/// <param name="Synced">The real-world D-ATIS text has been written into the station.</param>
+public sealed record StationRow(
+    string Key, string Connection, string Datis, string LastUpdated, bool Connected = false, bool Synced = false);
+
+public enum AirportStatus
+{
+    /// <summary>In the profile, nothing written yet.</summary>
+    Ready,
+
+    /// <summary>The D-ATIS text has been written, but the ATIS is not connected.</summary>
+    Synced,
+
+    /// <summary>At least one station is connected: the ATIS is live.</summary>
+    Started,
+
+    /// <summary>No longer in the vATIS profile.</summary>
+    Stale,
+}
 
 /// <summary>The marker for the pinned first entry of the airport list: overall status and the log.</summary>
 public sealed class OverviewPage
@@ -41,10 +59,30 @@ public sealed partial class AirportViewModel : ObservableObject
     public ObservableCollection<StationRow> Stations { get; } = [];
     public bool HasNoStations => Stations.Count == 0;
 
-    [ObservableProperty] private bool _isConnected;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    private bool _isConnected;
+
+    /// <summary>The real-world text has been written into at least one of its stations.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    private bool _isSynced;
 
     /// <summary>vATIS was read and this airport is not in the profile any more. It stays listed so its settings are not lost.</summary>
-    [ObservableProperty] private bool _isStale;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    private bool _isStale;
+
+    /// <summary>Stale outranks everything (nothing is synced for it); then live, then written, then waiting.</summary>
+    public AirportStatus Status => IsStale ? AirportStatus.Stale
+        : IsConnected ? AirportStatus.Started
+        : IsSynced ? AirportStatus.Synced
+        : AirportStatus.Ready;
+
+    public string StatusText => Messages.Get(Status switch
+    {
+        AirportStatus.Stale => Msg.AirportStale,
+        AirportStatus.Started => Msg.AirportStarted,
+        AirportStatus.Synced => Msg.AirportSynced,
+        _ => Msg.AirportReady,
+    });
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CustomRules))]
     private bool _useDefaultRules;
@@ -80,7 +118,8 @@ public sealed partial class AirportViewModel : ObservableObject
     {
         Stations.Clear();
         foreach (var r in rows) Stations.Add(r);
-        IsConnected = Stations.Any(s => s.Connection == "Connected");
+        IsConnected = Stations.Any(s => s.Connected);
+        IsSynced = Stations.Any(s => s.Synced);
         OnPropertyChanged(nameof(HasNoStations));
     }
 }

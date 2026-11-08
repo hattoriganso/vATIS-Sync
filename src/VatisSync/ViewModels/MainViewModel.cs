@@ -467,7 +467,9 @@ public sealed partial class MainViewModel : ObservableObject
             st.Key,
             st.Connected ? "Connected" : "Not connected",
             !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
-            st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "")).ToList();
+            st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "",
+            Connected: st.Connected,
+            Synced: st.LastConfiguredAt is not null && st.DatisAvailable)).ToList();
 
         // A sync problem stays up until the sync is working again (or stopped), not just until the next retry starts.
         if (s.IsError && s.Message is { } problem) Notify(VatisUnreachable, NoticeKind.Error, problem);

@@ -129,18 +129,39 @@
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE738;" FontSize="12" Foreground="#B45309"/>
                                     </Button>
-                                    <TextBlock Text="{Binding Icao}" FontSize="14">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsStale}" Value="True">
-                                                        <Setter Property="Foreground" Value="#B45309"/>
-                                                        <Setter Property="ToolTip" Value="No longer in your vATIS profile. Its settings are kept."/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Icao}" FontSize="14">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsStale}" Value="True">
+                                                            <Setter Property="Foreground" Value="#B45309"/>
+                                                            <Setter Property="ToolTip" Value="No longer in your vATIS profile. Its settings are kept."/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="11">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Started">
+                                                            <Setter Property="Foreground" Value="#15803D"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Synced">
+                                                            <Setter Property="Foreground" Value="#1F6FD6"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Stale">
+                                                            <Setter Property="Foreground" Value="#B45309"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
                                 </DockPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

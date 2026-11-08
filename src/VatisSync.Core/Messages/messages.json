@@ -51,6 +51,22 @@
   "discovery.matches": "Your airport list matches your vATIS profile.",
 
   // ---------------------------------------------------------------------------------------------------------------
+  // The small status word under each airport in the list on the left
+  // ---------------------------------------------------------------------------------------------------------------
+
+  // In the profile, nothing written yet (the sync is not running, or has not reached this airport).
+  "airport.ready": "Ready",
+
+  // The real-world D-ATIS text has been written into its vATIS station(s), but the ATIS is not connected yet.
+  "airport.synced": "Synced",
+
+  // At least one of its stations is connected, so the ATIS is live on VATSIM.
+  "airport.started": "Started",
+
+  // No longer in the vATIS profile (its settings are kept).
+  "airport.stale": "Stale",
+
+  // ---------------------------------------------------------------------------------------------------------------
   // Syncing D-ATIS into vATIS (status line at the top, Log, and the bar when something goes wrong)
   // ---------------------------------------------------------------------------------------------------------------
 

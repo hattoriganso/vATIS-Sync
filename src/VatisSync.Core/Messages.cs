@@ -29,6 +29,12 @@ public static class Msg
     public static readonly MessageKey DiscoveryStale = new("discovery.stale", "count");
     public static readonly MessageKey DiscoveryMatches = new("discovery.matches");
 
+    // The status word under each airport in the list
+    public static readonly MessageKey AirportReady = new("airport.ready");
+    public static readonly MessageKey AirportSynced = new("airport.synced");
+    public static readonly MessageKey AirportStarted = new("airport.started");
+    public static readonly MessageKey AirportStale = new("airport.stale");
+
     // Status line
     public static readonly MessageKey StatusStoppedHeadline = new("status.stopped.headline");
     public static readonly MessageKey StatusStoppedDetail = new("status.stopped.detail");
