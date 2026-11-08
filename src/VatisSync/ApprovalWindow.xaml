@@ -1,4 +1,4 @@
-<Window x:Class="VatisSync.ApprovalWindow"
+﻿<Window x:Class="VatisSync.ApprovalWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Approve ATIS change" Width="780" Height="520" MinWidth="560" MinHeight="380"
@@ -14,7 +14,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <TextBlock x:Name="Headline" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBlock x:Name="Summary" TextWrapping="Wrap" Margin="0,4,0,0"
-                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                       Foreground="{DynamicResource HintBrush}"/>
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -48,7 +48,7 @@
             </StackPanel>
             <TextBlock Text="Keep current leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again."
                        Margin="0,8,0,0" TextWrapping="Wrap" HorizontalAlignment="Right"
-                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                       Foreground="{DynamicResource HintBrush}"/>
         </StackPanel>
     </Grid>
 </Window>

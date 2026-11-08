@@ -275,8 +275,10 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,14,0,6"/>
         </Style>
+        <!-- Secondary text. Dark enough to read on the gray sidebar and on the pale blue selection (about 5:1). -->
+        <SolidColorBrush x:Key="HintBrush" Color="#FF595959"/>
         <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource HintBrush}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
 

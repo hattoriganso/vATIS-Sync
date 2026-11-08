@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -45,7 +45,9 @@ public class DiffTextBlock : TextBlock
         var shown = segments?.Where(s => ShowChanges || s.Kind != DiffKind.Removed).ToList() ?? [];
         if (shown.Count == 0)
         {
-            Inlines.Add(new Run(Messages.Get(Msg.SummaryNothing)) { Foreground = SystemColors.GrayTextBrush });
+            var empty = new Run(Messages.Get(Msg.SummaryNothing));
+            empty.SetResourceReference(TextElement.ForegroundProperty, "HintBrush");
+            Inlines.Add(empty);
             return;
         }
 
