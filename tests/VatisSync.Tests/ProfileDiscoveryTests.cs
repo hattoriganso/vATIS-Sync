@@ -70,7 +70,7 @@ public class ProfileDiscoveryTests
 
         r.Discovery.Start();
         await WaitFor(() => r.Discovery.State.Phase == DiscoveryPhase.Waiting, "the first countdown");
-        Assert.Equal("Could not reach vATIS.", r.Discovery.State.Problem);
+        Assert.Equal(Messages.Get(Msg.DiscoveryProblem), r.Discovery.State.Problem);
         await WaitFor(() => r.Vatis.Calls >= 3, "automatic retries"); // two full countdowns went by
 
         r.Vatis.Up = true;

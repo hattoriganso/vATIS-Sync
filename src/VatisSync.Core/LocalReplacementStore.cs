@@ -78,15 +78,14 @@ public sealed class LocalReplacementStore : IReplacementSource
                 var parsed = Parse(File.ReadAllText(_userFilePath));
                 if (parsed is null)
                 {
-                    Warning?.Invoke($"Ignoring {_userFilePath}: not a valid rules file " +
-                                    "(expected {\"replacements\": {\"KSFO\": {\"regex\": \"replacement\"}}}).");
+                    Warning?.Invoke(Messages.Get(Msg.RulesInvalidFile, new { path = _userFilePath }));
                     return; // keep the last good user rules
                 }
                 _user = parsed;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                Warning?.Invoke($"Could not read {_userFilePath}: {ex.Message}");
+                Warning?.Invoke(Messages.Get(Msg.RulesReadFailed, new { path = _userFilePath, reason = ex.Message }));
                 return;
             }
         }

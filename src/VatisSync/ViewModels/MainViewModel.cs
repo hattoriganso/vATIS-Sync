@@ -133,11 +133,11 @@ public sealed partial class MainViewModel : ObservableObject
     public void ReportUnexpectedError(Exception error, string? logPath)
     {
         var firstLine = error.Message.Split('\n')[0].Trim();
-        var saved = logPath is null ? "" : $" Details are saved in {logPath}.";
         OnUi(() =>
         {
-            AddLog($"Unexpected error ({error.GetType().Name}): {firstLine}");
-            Notify("unexpected-error", NoticeKind.Error, $"Something went wrong, but the app kept running: {firstLine}{saved}");
+            AddLog(Messages.Get(Msg.AppUnexpectedLog, new { type = error.GetType().Name, message = firstLine }));
+            Notify("unexpected-error", NoticeKind.Error,
+                logPath is null ? Messages.Get(Msg.AppUnexpectedNoFile) : Messages.Get(Msg.AppUnexpected, new { path = logPath }));
         });
     }
 
@@ -153,7 +153,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _manualRefresh;      // the user pressed the button, so say what the re-read found even when nothing changed
     private int _loggedFailures;      // failed attempts already written to the log in this run of failures
 
-    [ObservableProperty] private string _discoveryText = "Looking for vATIS…";
+    [ObservableProperty] private string _discoveryText = Messages.Get(Msg.DiscoverySearching);
     [ObservableProperty] private string _discoveryButtonText = "Retry now";
 
     /// <summary>Starts reading the vATIS profile, and keeps trying until vATIS answers. Read-only towards vATIS.</summary>
@@ -174,20 +174,20 @@ public sealed partial class MainViewModel : ObservableObject
         switch (state.Phase)
         {
             case DiscoveryPhase.Searching:
-                DiscoveryText = state.Failures == 0 ? "Looking for vATIS…" : "Trying vATIS again…";
-                if (state.Failures > 0) _notices.Update(Discovery, "Couldn't sync with vATIS. Trying again…");
+                DiscoveryText = Messages.Get(state.Failures == 0 ? Msg.DiscoverySearching : Msg.DiscoverySearchingAgain);
+                if (state.Failures > 0) _notices.Update(Discovery, Messages.Get(Msg.DiscoveryTryingBar));
                 break;
 
             case DiscoveryPhase.Waiting:
                 var seconds = Math.Max(1, (int)Math.Ceiling(state.Remaining.TotalSeconds));
-                var text = $"Couldn't sync with vATIS, retrying in {seconds} second{(seconds == 1 ? "" : "s")}.";
-                DiscoveryText = text;
+                DiscoveryText = Messages.Get(Msg.DiscoveryWaiting, new { seconds });
                 DiscoveryButtonText = "Retry now";
-                var bar = text + " Open vATIS and make sure its websocket is enabled.";
+                var bar = Messages.Get(Msg.DiscoveryWaitingBar, new { seconds });
                 if (state.Failures > _loggedFailures) // the first tick after each failed attempt: log every attempt, once
                 {
                     _loggedFailures = state.Failures;
-                    AddLog($"{state.Problem ?? "Could not read the vATIS profile."} Attempt {state.Failures} failed; retrying in {seconds} second{(seconds == 1 ? "" : "s")}.");
+                    AddLog(Messages.Get(Msg.DiscoveryAttemptFailed,
+                        new { problem = state.Problem ?? Messages.Get(Msg.DiscoveryProblem), attempt = state.Failures, seconds }));
                 }
                 if (!_discoveryAnnounced)
                 {
@@ -200,7 +200,7 @@ public sealed partial class MainViewModel : ObservableObject
             case DiscoveryPhase.Found:
                 _discoveryAnnounced = false;
                 _notices.Resolve(Discovery);
-                DiscoveryText = "Airports read from your vATIS profile.";
+                DiscoveryText = Messages.Get(Msg.DiscoveryFound);
                 DiscoveryButtonText = "Refresh";
                 break;
         }
@@ -214,7 +214,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (found.Count == 0)
         {
             _loggedFailures = 0;
-            var message = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
+            var message = Messages.Get(Msg.DiscoveryEmpty);
             AddLog(message);
             Notify(DiscoveryEmpty, NoticeKind.Warning, message);
             return;
@@ -224,9 +224,7 @@ public sealed partial class MainViewModel : ObservableObject
         var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
         var failedBefore = _loggedFailures;
         _loggedFailures = 0;
-        AddLog($"Read your vATIS profile: {found.Count} D-ATIS airport{(found.Count == 1 ? "" : "s")}" +
-               (added.Count > 0 ? $", {added.Count} new" : "") +
-               (failedBefore > 0 ? $" (vATIS answered after {failedBefore} failed attempt{(failedBefore == 1 ? "" : "s")})" : "") + ".");
+        AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }));
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
         foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
         if (added.Count > 0) Save();
@@ -234,11 +232,11 @@ public sealed partial class MainViewModel : ObservableObject
         var stale = Airports.Count(a => a.IsStale);
         string? result = null;
         if (added.Count > 0)
-            result = $"Added {added.Count} airport{(added.Count == 1 ? "" : "s")} from your vATIS profile.";
+            result = Messages.Get(Msg.DiscoveryAdded, new { count = added.Count });
         else if (manual)
             result = stale > 0
-                ? $"{stale} airport{(stale == 1 ? " is" : "s are")} no longer in your vATIS profile."
-                : "Your airport list matches your vATIS profile.";
+                ? Messages.Get(Msg.DiscoveryStale, new { count = stale })
+                : Messages.Get(Msg.DiscoveryMatches);
         if (result is null) return;
         Notify(Discovery + "-result", NoticeKind.Info, result);
     }
@@ -317,7 +315,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_loading) return;
         if (!StartupRegistration.Set(value))
         {
-            AddLog("Could not change the Windows startup setting.");
+            AddLog(Messages.Get(Msg.StartupFailed));
             _loading = true;
             StartWithWindows = StartupRegistration.IsEnabled();
             _loading = false;
@@ -371,7 +369,7 @@ public sealed partial class MainViewModel : ObservableObject
         var icao = NewConnectAirport.Trim().ToUpperInvariant();
         if (!IsIcao(icao))
         {
-            AddLog($"'{NewConnectAirport.Trim()}' is not a 4-letter airport code (for example KSFO).");
+            AddLog(Messages.Get(Msg.ConnectInvalidAirport, new { text = NewConnectAirport.Trim() }));
             return;
         }
         if (!ConnectAirports.Contains(icao)) { ConnectAirports.Add(icao); Save(); }
@@ -461,11 +459,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     private static (string Headline, string Detail) Describe(SyncStatus s) => s.Phase switch
     {
-        SyncPhase.Stopped => ("Stopped", "Press Start to sync real-world D-ATIS into vATIS."),
-        SyncPhase.Starting => ("Starting", s.Message ?? "Getting ready..."),
-        SyncPhase.WaitingForVatis => ("Waiting for vATIS", s.Message ?? "vATIS is not reachable. Open vATIS and make sure its websocket is enabled."),
-        SyncPhase.Syncing => ("Syncing", s.Message ?? "Updating your ATIS stations..."),
-        SyncPhase.Idle => ("Up to date", s.Message ?? "Waiting for the next refresh."),
+        SyncPhase.Stopped => (Messages.Get(Msg.StatusStoppedHeadline), Messages.Get(Msg.StatusStoppedDetail)),
+        SyncPhase.Starting => (Messages.Get(Msg.StatusStartingHeadline), s.Message ?? Messages.Get(Msg.StatusStartingDetail)),
+        SyncPhase.WaitingForVatis => (Messages.Get(Msg.StatusWaitingHeadline), s.Message ?? Messages.Get(Msg.StatusWaitingDetail)),
+        SyncPhase.Syncing => (Messages.Get(Msg.StatusSyncingHeadline), s.Message ?? Messages.Get(Msg.StatusSyncingDetail)),
+        SyncPhase.Idle => (Messages.Get(Msg.StatusIdleHeadline), s.Message ?? Messages.Get(Msg.StatusIdleDetail)),
         _ => ("", ""),
     };
 
@@ -484,7 +482,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
-            AddLog($"Could not open {path}: {ex.Message}");
+            AddLog(Messages.Get(Msg.RulesOpenFailed, new { path, reason = ex.Message }));
         }
     }
 

@@ -140,7 +140,7 @@ public sealed class ProfileDiscovery(
         {
             _failures++;
             var problem = ex is VatisUnavailableException or OperationCanceledException
-                ? "Could not reach vATIS."
+                ? Messages.Get(Msg.DiscoveryProblem)
                 : ex.Message;
             Set(new DiscoveryState(DiscoveryPhase.Searching, Problem: problem, Failures: _failures));
             return false;

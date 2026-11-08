@@ -1,0 +1,133 @@
+{
+  // Every message vATIS-Sync shows to the user: the bar along the bottom, the status line at the top, and the Log.
+  //
+  // Placeholders: {name} is replaced by a value. {count?airport|airports} picks the first word when the value is 1
+  // and the second otherwise. Only the placeholders listed above each message exist, and a misspelled one is caught
+  // by a test. To show a literal brace, don't: braces are always placeholders.
+  //
+  // Messages are built into the app, so a change here shows up the next time it is built.
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Reading the airports from the open vATIS profile (shown when the app starts, and after "Retry now" / "Refresh")
+  // ---------------------------------------------------------------------------------------------------------------
+
+  // Left panel, while the very first try is running.
+  "discovery.searching": "Looking for vATIS…",
+
+  // Left panel, while a retry is running.
+  "discovery.searching-again": "Trying vATIS again…",
+
+  // Left panel, counting down to the next try.   {seconds}
+  "discovery.waiting": "Couldn't sync with vATIS, retrying in {seconds} {seconds?second|seconds}.",
+
+  // Yellow bar at the bottom while vATIS can't be read. The number counts down by itself.   {seconds}
+  "discovery.waiting-bar": "Couldn't sync with vATIS, retrying in {seconds} {seconds?second|seconds}. Make sure vATIS is open.",
+
+  // The same bar while a retry is actually running.
+  "discovery.trying-bar": "Couldn't sync with vATIS. Trying again…",
+
+  // Left panel once vATIS has been read.
+  "discovery.found": "Airports read from your vATIS profile.",
+
+  // Log, one line for each failed try.   {problem} is the reason (see discovery.problem), {attempt} is the try number, {seconds}
+  "discovery.attempt-failed": "{problem} Attempt {attempt} failed; retrying in {seconds} {seconds?second|seconds}.",
+
+  // The reason given in the line above when vATIS can't be reached at all.
+  "discovery.problem": "Couldn't reach vATIS.",
+
+  // Log, every time vATIS is read.   {count} airports found, {new} of them new to the list, {failed} failed tries before this one
+  "discovery.read": "Read your vATIS profile: {count} D-ATIS {count?airport|airports} found, {new} new. Failed tries before this: {failed}.",
+
+  // Yellow bar and Log when vATIS answers but nothing in the profile uses D-ATIS.
+  "discovery.empty": "vATIS is open, but none of the stations in your profile use D-ATIS.",
+
+  // Green bar when airports were added to the list.   {count}
+  "discovery.added": "Added {count} {count?airport|airports} from your vATIS profile.",
+
+  // Green bar after "Refresh" when some listed airports are no longer in the profile.   {count}
+  "discovery.stale": "{count} {count?airport is|airports are} no longer in your vATIS profile.",
+
+  // Green bar after "Refresh" when nothing changed.
+  "discovery.matches": "Your airport list matches your vATIS profile.",
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Syncing D-ATIS into vATIS (status line at the top, Log, and the bar when something goes wrong)
+  // ---------------------------------------------------------------------------------------------------------------
+
+  // Status line (headline and the small text under it) for each stage.
+  "status.stopped.headline": "Stopped",
+  "status.stopped.detail": "Press Start to sync real-world D-ATIS into vATIS.",
+  "status.starting.headline": "Starting",
+  "status.starting.detail": "Getting ready…",
+  "status.waiting.headline": "Waiting for vATIS",
+  "status.waiting.detail": "Waiting for vATIS to open.",
+  "status.syncing.headline": "Syncing",
+  "status.syncing.detail": "Updating your ATIS stations…",
+  "status.idle.headline": "Up to date",
+  "status.idle.detail": "Waiting for the next refresh.",
+
+  // What the status line says during each step of a sync.
+  "engine.starting": "Starting…",
+  "engine.waiting": "Waiting for vATIS…",
+  "engine.loading": "Loading D-ATIS…",
+  "engine.refreshing": "Refreshing D-ATIS…",
+
+  // Red bar and status line when vATIS is lost during a sync. The app keeps trying by itself.
+  "engine.unreachable": "Couldn't sync with vATIS. Make sure it is open. Retrying…",
+
+  // Log, with the technical reason.   {reason}
+  "engine.unreachable-log": "vATIS unavailable: {reason}",
+
+  // Red bar and status line when something unexpected stops a sync. The app keeps trying by itself.
+  "engine.unexpected": "Something went wrong while syncing. Retrying…",
+
+  // Log, with the technical details.   {error}
+  "engine.unexpected-log": "Unexpected error: {error}",
+
+  // Log, when the app could not find vATIS to start it for you.
+  "engine.vatis-not-found": "vATIS wasn't found in its usual place; waiting for you to start it.",
+
+  // Log, when real-world D-ATIS could not be downloaded.   {reason}
+  "engine.datis-failed-cached": "Couldn't download D-ATIS ({reason}); using the last good copy.",
+  "engine.datis-failed-none": "Couldn't download D-ATIS ({reason}); there is no copy to use.",
+
+  // Status line while the app waits for you to approve a change.   {station}
+  "engine.waiting-approval": "Waiting for your approval ({station})…",
+
+  // Log, after you decide.   {station}, {summary} what would have changed
+  "engine.approval-kept": "{station}: kept the current ATIS ({summary})",
+  "engine.approval-applied": "{station}: update approved ({summary})",
+
+  // Log, when a station is connected or disconnected.   {station}, {limit}
+  "engine.connected": "Connected {station}.",
+  "engine.disconnected-limit": "Disconnected {station} (over the {limit}-connection limit).",
+
+  // Log, when text you deleted by hand is kept deleted.   {count}, {station}
+  "engine.keeping-deletions": "Keeping {count} manual {count?deletion|deletions} for {station}.",
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Settings and rules files, and other things that go wrong in the app itself
+  // ---------------------------------------------------------------------------------------------------------------
+
+  // Yellow bar and Log.   {path}, {reason}
+  "settings.read-failed": "Couldn't read your settings file, so the standard settings are in use. ({path}: {reason})",
+  "settings.save-failed": "Couldn't save your settings. ({path}: {reason})",
+
+  // Yellow bar and Log, about the file of your own rules.   {path}, {reason}
+  "rules.invalid-file": "Your rules file wasn't understood, so it was ignored: {path}. See docs/rules.md for how it should look.",
+  "rules.read-failed": "Couldn't read your rules file {path}: {reason}",
+  "rules.open-failed": "Couldn't open your rules file {path}: {reason}",
+
+  // Log, when the Windows startup option can't be changed.
+  "startup.failed": "Couldn't change the Windows startup setting.",
+
+  // Log, when the text typed in "Connect only these airports" is not an airport code.   {text}
+  "connect.invalid-airport": "'{text}' is not a 4-letter airport code (for example KSFO).",
+
+  // Red bar when something unexpected goes wrong in the window. The app keeps running.   {path} is the file with the details
+  "app.unexpected": "Something went wrong, but vATIS-Sync kept running. Details were saved to {path}.",
+  "app.unexpected-no-file": "Something went wrong, but vATIS-Sync kept running.",
+
+  // Log, with the technical details.   {type}, {message}
+  "app.unexpected-log": "Unexpected error ({type}): {message}"
+}

@@ -141,7 +141,7 @@ public sealed class SettingsStore(string? path = null)
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            Warning?.Invoke($"Could not read {FilePath} ({ex.Message}); using default settings.");
+            Warning?.Invoke(Messages.Get(Msg.SettingsReadFailed, new { path = FilePath, reason = ex.Message }));
             return new AppSettings();
         }
     }
@@ -159,7 +159,7 @@ public sealed class SettingsStore(string? path = null)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Warning?.Invoke($"Could not save settings to {FilePath} ({ex.Message}).");
+            Warning?.Invoke(Messages.Get(Msg.SettingsSaveFailed, new { path = FilePath, reason = ex.Message }));
             return false;
         }
     }

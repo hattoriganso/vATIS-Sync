@@ -82,14 +82,13 @@ public sealed class SyncEngine(
                 }
                 catch (VatisUnavailableException ex)
                 {
-                    Info($"vATIS unavailable: {ex.Message}");
-                    Publish(SyncPhase.WaitingForVatis,
-                        "Can't reach vATIS. Is it running with its websocket enabled? Retrying…", isError: true);
+                    Info(Messages.Get(Msg.EngineUnreachableLog, new { reason = ex.Message }));
+                    Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineUnreachable), isError: true);
                 }
                 catch (Exception ex)
                 {
-                    Info($"Unexpected error: {ex}");
-                    Publish(SyncPhase.WaitingForVatis, $"Unexpected error: {ex.Message}. Retrying…", isError: true);
+                    Info(Messages.Get(Msg.EngineUnexpectedLog, new { error = ex }));
+                    Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineUnexpected), isError: true);
                 }
 
                 try { await Task.Delay(options.RetryDelay, ct).ConfigureAwait(false); }
@@ -110,21 +109,21 @@ public sealed class SyncEngine(
         _noMoreAsking.Clear();
         var letters = new LetterSync();
 
-        Publish(SyncPhase.Starting, "Starting…");
+        Publish(SyncPhase.Starting, Messages.Get(Msg.EngineStarting));
         if (options.LaunchVatis)
         {
             var launched = launcher.EnsureRunning();
             if (launched == LaunchResult.NotFound)
-                Info("vATIS was not found in its default location; waiting for you to start it.");
+                Info(Messages.Get(Msg.EngineVatisNotFound));
         }
 
-        Publish(SyncPhase.WaitingForVatis, "Waiting for vATIS…");
+        Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineWaiting));
         if (!await client.WaitUntilReadyAsync(options.StartupTimeout, ct).ConfigureAwait(false))
             throw new VatisUnavailableException("vATIS did not respond.");
 
         // Initial pass. The first configure runs while stations are still disconnected, so vATIS
         // can't apply the ATIS letter yet; the second one (after connecting) sets it.
-        Publish(SyncPhase.Syncing, "Loading D-ATIS…");
+        Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineLoading));
         await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
         await ConnectAsync(letters, ct).ConfigureAwait(false);
         await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
@@ -142,7 +141,7 @@ public sealed class SyncEngine(
         {
             Publish(SyncPhase.Idle, null, lastSync, lastSync + options.Interval);
             await Task.Delay(options.Interval, ct).ConfigureAwait(false);
-            Publish(SyncPhase.Syncing, "Refreshing D-ATIS…", lastSync);
+            Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineRefreshing), lastSync);
 
             // After the first interval, treat text the user deleted by hand as "keep deleted".
             if (removals is null)
@@ -168,8 +167,7 @@ public sealed class SyncEngine(
 
         var fetch = await datis.FetchAsync(ct).ConfigureAwait(false);
         if (!fetch.Succeeded)
-            Info($"D-ATIS fetch failed ({fetch.Error}); " +
-                 (fetch.FromCache ? "using the last good copy." : "no data available."));
+            Info(Messages.Get(fetch.FromCache ? Msg.EngineDatisFailedCached : Msg.EngineDatisFailedNone, new { reason = fetch.Error }));
         var now = _time.GetUtcNow();
 
         foreach (var s in stations)
@@ -243,7 +241,7 @@ public sealed class SyncEngine(
         var fingerprint = updated + "|" + text.Notams.Trim();
         if (_declined.TryGetValue(key, out var seen) && seen == fingerprint) return false;
 
-        Publish(SyncPhase.Syncing, $"Waiting for your approval ({key})…");
+        Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineWaitingApproval, new { station = key }));
         var request = new ApprovalRequest(key, current, updated, flowChanged,
             FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated));
         var decision = await approver.RequestAsync(request, ct).ConfigureAwait(false);
@@ -252,14 +250,14 @@ public sealed class SyncEngine(
         {
             case ApprovalDecision.KeepCurrent:
                 _declined[key] = fingerprint;
-                Info($"{key}: kept the current ATIS ({request.Summary})");
+                Info(Messages.Get(Msg.EngineApprovalKept, new { station = key, summary = request.Summary }));
                 return false;
             case ApprovalDecision.ApplyAndStopAsking:
                 _noMoreAsking.Add(key);
                 goto default;
             default:
                 _declined.Remove(key);
-                Info($"{key}: update approved ({request.Summary})");
+                Info(Messages.Get(Msg.EngineApprovalApplied, new { station = key, summary = request.Summary }));
                 return true;
         }
     }
@@ -296,7 +294,7 @@ public sealed class SyncEngine(
             {
                 connected++;
                 letters.NoteConnected(s.Key);
-                Info($"Connected {s.Key}.");
+                Info(Messages.Get(Msg.EngineConnected, new { station = s.Key }));
             }
         }
     }
@@ -309,7 +307,7 @@ public sealed class SyncEngine(
         foreach (var s in connected.Skip(options.MaxConnections))
         {
             await client.DisconnectAtisAsync(s.Id, ct).ConfigureAwait(false);
-            Info($"Disconnected {s.Key} (over the {options.MaxConnections}-connection limit).");
+            Info(Messages.Get(Msg.EngineDisconnectedLimit, new { station = s.Key, limit = options.MaxConnections }));
         }
     }
 
@@ -335,7 +333,7 @@ public sealed class SyncEngine(
         {
             var contractions = await client.GetContractionsAsync(station, ct).ConfigureAwait(false);
             result[station] = DeletionTracker.ExpandContractions(portions, contractions);
-            Info($"Keeping {result[station].Count} manual deletion(s) for {station}.");
+            Info(Messages.Get(Msg.EngineKeepingDeletions, new { count = result[station].Count, station }));
         }
         return result;
     }
