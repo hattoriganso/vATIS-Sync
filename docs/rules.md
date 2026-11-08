@@ -19,19 +19,24 @@ For each station, in this order:
 3. The NOTAM heading is normalized to `NOTAMS...`. The forms `NOTICE TO AIRMEN`, `NOTICES TO AIRMEN` and
    `NOTICE TO AIR MISSIONS` (with or without a period) all become the same marker.
 4. **Built-in rules** run, then **airport rules**, then **deletion rules** (below).
-5. Whitespace and punctuation are tidied, and your vATIS contractions are substituted.
-6. The text is split at the first `NOTAMS... `. Everything before it goes into *Airport Conditions* and everything
+5. **Frequencies** are handled, position by position (below).
+6. Whitespace and punctuation are tidied, and your vATIS contractions are substituted.
+7. The text is split at the first `NOTAMS... `. Everything before it goes into *Airport Conditions* and everything
    after it into *NOTAMs*.
 
 Every rule pattern automatically also swallows up to two trailing `,` `.` or `;`, so removing a sentence does not leave
 stray punctuation behind. This is also why a rule that matches a *sentence* does not need to include its final period.
 
+To see the result for an airport, open its **Summary** tab and tick *Show what was changed from the real-world text*:
+removed words are struck through and words that were put in are highlighted. See [Airports](airports.md#summary).
+
 ## Built-in rules
 
 Built-in rules apply to every airport. They are defined in
 [`src/VatisSync.Core/Rules/builtin-rules.json`](../src/VatisSync.Core/Rules/builtin-rules.json) with an id, a name,
-a description and one or more patterns. The engine can switch any of them off by id (`SyncOptions.DisabledRules`);
-the **Rules** tab has a switch for each.
+a description and one or more patterns. Each one can be switched off. The switches for all airports are in the Settings
+window (the gear icon), under *Default rules for all airports*. An airport can have its own set instead, on the
+**Settings** tab of its page. See [Settings for one airport](airports.md#settings-for-one-airport).
 
 ### What counts as a sentence
 
@@ -116,7 +121,9 @@ Limits: only the exact phrase `TFR IN EFFECT` is matched. Other TFR wording is l
 
 ## Airport rules
 
-Rules for a single airport live in a JSON file. The built-in one ships empty. Yours lives at:
+Not to be confused with an airport's own *settings* (which built-in rules and frequency modes it uses, kept in the
+[Airports folder](airports.md#the-airports-folder)). This section is about your own text replacements for a single
+airport, which live in a JSON file. The built-in one ships empty. Yours lives at:
 
 ```
 %APPDATA%\VatisSync\replacements.json
@@ -155,7 +162,9 @@ what gets removed.
 ## Frequencies
 
 Real ATIS often tells pilots to contact a position on a frequency, and on VATSIM that controller may not be online.
-In the **Rules** tab each position gets a mode:
+Each position gets a mode. The defaults for all airports are in the Settings window (the gear icon), under *Default
+frequencies for all airports*; an airport can have its own on the **Settings** tab of its page
+(see [Airports](airports.md#settings-for-one-airport)):
 
 - **Keep as is** (default): keep the real-world text.
 - **Remove**: remove the instruction.
@@ -187,7 +196,7 @@ PUSH`) is never touched.
 - **Known limit.** When an instruction is woven into a longer list, only its own clause goes: KPHX's
   `CLNC DLVY FREQ 133.7, INT, E13 INT, ...` leaves `INT, E13 INT, ...` behind.
 
-Frequencies are applied after the built-in and airport rules and before your contractions.
+Frequencies are applied after the built-in, airport and deletion rules and before your contractions.
 
 ## Changing or adding built-in rules
 
