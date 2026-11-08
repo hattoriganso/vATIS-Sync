@@ -76,25 +76,9 @@
                     BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
                 <DockPanel>
                     <!-- Overview: a tile of its own, not a row of the list -->
-                    <Border DockPanel.Dock="Top" Margin="8,10,8,0" Padding="12,10" CornerRadius="4" Cursor="Hand"
-                            AutomationProperties.Name="Overview">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding ShowOverviewCommand}"/>
-                        </Border.InputBindings>
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <!-- Same look as an airport row: flat, pale blue wash when hovered or selected -->
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#FFE5F1FB"/>
-                                    </Trigger>
-                                    <DataTrigger Binding="{Binding IsOverviewSelected}" Value="True">
-                                        <Setter Property="Background" Value="#FFC4DDF0"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
+                    <!-- A real button, so Tab, Enter and Space reach it. Styled like an airport row (see SidebarTile in App.xaml). -->
+                    <Button DockPanel.Dock="Top" Margin="8,10,8,0" Style="{StaticResource SidebarTile}"
+                            Command="{Binding ShowOverviewCommand}" AutomationProperties.Name="Overview">
                         <!-- The icon is centered against both lines (title and status), not just the title -->
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -108,7 +92,7 @@
                                 <TextBlock Text="{Binding Headline}" FontSize="12" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>
-                    </Border>
+                    </Button>
 
                     <TextBlock DockPanel.Dock="Top" Text="AIRPORTS" FontSize="12" FontWeight="SemiBold"
                                Style="{StaticResource Hint}" Margin="21,18,8,4"/>
