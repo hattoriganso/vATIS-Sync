@@ -1,7 +1,55 @@
 ﻿<Application x:Class="VatisSync.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:VatisSync.ViewModels"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,5"/>
+            <Setter Property="MinWidth" Value="72"/>
+        </Style>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,14,0,6"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- One built-in rule switch. Used on airport pages and for the defaults in Settings. -->
+        <DataTemplate DataType="{x:Type vm:RuleToggle}">
+            <StackPanel Margin="0,0,0,10">
+                <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding Description}" Style="{StaticResource Hint}" Margin="22,2,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- One frequency row: position, mode, and the frequency to write when replacing. -->
+        <DataTemplate DataType="{x:Type vm:FrequencyRoleSetting}">
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="190"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding Name}"/>
+                    <TextBlock Text="{Binding Example}" Style="{StaticResource Hint}" FontSize="11"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1" VerticalAlignment="Top"
+                          ItemsSource="{x:Static vm:MainViewModel.FrequencyModeChoices}"
+                          DisplayMemberPath="Label" SelectedValuePath="Mode"
+                          SelectedValue="{Binding Mode}"/>
+                <TextBox Grid.Column="2" VerticalAlignment="Top" Margin="8,0,0,0"
+                         Text="{Binding Frequency, UpdateSourceTrigger=LostFocus}"
+                         Visibility="{Binding IsOverride, Converter={StaticResource BoolToVisibility}}"/>
+                <TextBlock Grid.Column="3" Margin="10,2,0,0" Foreground="#B45309"
+                           Text="{Binding FrequencyProblem}" Style="{StaticResource Hint}"/>
+            </Grid>
+        </DataTemplate>
     </Application.Resources>
 </Application>

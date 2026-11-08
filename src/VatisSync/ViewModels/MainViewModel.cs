@@ -10,63 +10,6 @@ namespace VatisSync.ViewModels;
 
 public sealed record ApprovalChoice(ApprovalMode Mode, string Label);
 
-public sealed record StationRow(string Key, string Connection, string Datis, string LastUpdated);
-
-public sealed partial class RuleToggle(string id, string name, string description, bool enabled, Action<RuleToggle> changed)
-    : ObservableObject
-{
-    public string Id { get; } = id;
-    public string Name { get; } = name;
-    public string Description { get; } = description;
-
-    [ObservableProperty] private bool _enabled = enabled;
-
-    partial void OnEnabledChanged(bool value) => changed(this);
-}
-
-public sealed record FrequencyModeChoice(FrequencyMode Mode, string Label);
-
-/// <summary>One position's frequency handling in the Rules tab: keep, remove, or replace with a frequency the user types.</summary>
-public sealed partial class FrequencyRoleSetting : ObservableObject
-{
-    private readonly Action<FrequencyRoleSetting> _changed;
-
-    public FrequencyRoleSetting(FrequencyRole role, string name, string example, FrequencySetting? setting,
-        Action<FrequencyRoleSetting> changed)
-    {
-        Role = role;
-        Name = name;
-        Example = example;
-        _mode = setting?.Mode ?? FrequencyMode.Off;
-        _frequency = setting?.Frequency ?? "";
-        _changed = changed;
-    }
-
-    public FrequencyRole Role { get; }
-    public string Name { get; }
-    public string Example { get; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOverride), nameof(FrequencyProblem))]
-    private FrequencyMode _mode;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FrequencyProblem))]
-    private string _frequency;
-
-    public bool IsOverride => Mode == FrequencyMode.Override;
-
-    /// <summary>Shown beside the box while the frequency is missing or not a valid one (such as 121.900).</summary>
-    public string FrequencyProblem => IsOverride && !FrequencyDetector.IsValidFrequency(Frequency?.Trim())
-        ? "Type a frequency such as 121.900. Until then the real text is kept."
-        : "";
-
-    public FrequencySetting ToSetting() => new(Mode, Mode == FrequencyMode.Override ? Frequency.Trim() : null);
-
-    partial void OnModeChanged(FrequencyMode value) => _changed(this);
-    partial void OnFrequencyChanged(string value) => _changed(this);
-}
-
 public sealed partial class MainViewModel : ObservableObject
 {
     private const int MaxLogLines = 500;
@@ -85,25 +28,7 @@ public sealed partial class MainViewModel : ObservableObject
         new(ApprovalMode.Never, "Apply changes automatically"),
     ];
 
-    public static IReadOnlyList<FrequencyModeChoice> FrequencyModeChoices { get; } =
-    [
-        new(FrequencyMode.Off, "Keep as is"),
-        new(FrequencyMode.Remove, "Remove"),
-        new(FrequencyMode.Override, "Replace with"),
-    ];
-
-    private static readonly (FrequencyRole Role, string Name, string Example)[] FrequencyRoles =
-    [
-        (FrequencyRole.ClearanceDelivery, "Clearance delivery", "CTC CD ON 121.7"),
-        (FrequencyRole.Ground, "Ground", "GROUND CONTROL ON 121.9"),
-        (FrequencyRole.Tower, "Tower", "TWR FREQ 118.5"),
-        (FrequencyRole.Departure, "Departure", "DEPT FREQ IS 119.35"),
-        (FrequencyRole.Approach, "Approach", "ALL ARRS CTC APCH 124.0"),
-        (FrequencyRole.Ramp, "Ramp", "RAMP CONTROL OPEN 126.225"),
-        (FrequencyRole.Metering, "Metering", "CONTACT GND METERING ON 121.67"),
-        (FrequencyRole.Helicopter, "Helicopter control", "HELICOPTOR CONTROL OPEN ON 119.9"),
-        (FrequencyRole.Other, "Other (no position named)", "RWY 9 FREQ 123.9"),
-    ];
+    public static IReadOnlyList<FrequencyModeChoice> FrequencyModeChoices => FrequencySetEditor.ModeChoices;
 
     public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null,
         IUpdateApprover? approver = null)
@@ -127,18 +52,87 @@ public sealed partial class MainViewModel : ObservableObject
         // The registry is the truth for autostart: the user may have removed it in Task Manager.
         StartWithWindows = StartupRegistration.IsEnabled();
 
-        foreach (var a in _settings.Airports) Airports.Add(a);
-        foreach (var r in BuiltInRules.All)
-            Rules.Add(new RuleToggle(r.Id, r.Name, r.Description,
-                !_settings.DisabledRules.Contains(r.Id, StringComparer.OrdinalIgnoreCase), _ => Save()));
+        foreach (var a in _settings.Airports) ConnectAirports.Add(a);
 
-        foreach (var (role, name, example) in FrequencyRoles)
-            Frequencies.Add(new FrequencyRoleSetting(role, name, example,
-                _settings.Frequencies.GetValueOrDefault(role), _ => Save()));
+        DefaultRules = new RuleSetEditor(_settings.DisabledRules, Save);
+        DefaultFrequencies = new FrequencySetEditor(_settings.Frequencies, Save);
+
+        Pages.Add(Overview);
+        var listed = _settings.KnownAirports.Concat(_settings.AirportOverrides.Keys).Concat(_settings.Airports)
+            .Distinct().Order(StringComparer.Ordinal);
+        foreach (var icao in listed) InsertAirport(NewAirportPage(icao));
+        _selectedPage = Overview;
 
         _loading = false;
         ApplyStatus(SyncStatus.Initial);
     }
+
+    // ---- airport list ----
+
+    public OverviewPage Overview { get; } = new();
+
+    /// <summary>The pinned Overview entry first, then the airports in alphabetical order.</summary>
+    public ObservableCollection<object> Pages { get; } = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedAirport), nameof(IsOverviewSelected), nameof(IsAirportSelected))]
+    private object _selectedPage;
+
+    public AirportViewModel? SelectedAirport => SelectedPage as AirportViewModel;
+    public bool IsOverviewSelected => SelectedPage is OverviewPage;
+    public bool IsAirportSelected => SelectedPage is AirportViewModel;
+
+    [ObservableProperty] private string _newAirport = "";
+
+    private IEnumerable<AirportViewModel> Airports => Pages.OfType<AirportViewModel>();
+
+    private AirportViewModel NewAirportPage(string icao) => new(
+        icao, _settings.AirportOverrides.GetValueOrDefault(icao),
+        () => DefaultRules.Disabled, () => DefaultFrequencies.ToDictionary(), Save);
+
+    private void InsertAirport(AirportViewModel page)
+    {
+        var index = 1;
+        while (index < Pages.Count && string.CompareOrdinal(((AirportViewModel)Pages[index]).Icao, page.Icao) < 0) index++;
+        Pages.Insert(index, page);
+    }
+
+    [RelayCommand]
+    private void AddAirport()
+    {
+        var icao = NewAirport.Trim().ToUpperInvariant();
+        if (!IsIcao(icao))
+        {
+            AddLog($"'{NewAirport.Trim()}' is not a 4-letter airport code (for example KSFO).");
+            return;
+        }
+        var page = Airports.FirstOrDefault(a => a.Icao == icao);
+        if (page is null)
+        {
+            page = NewAirportPage(icao);
+            InsertAirport(page);
+            Save();
+        }
+        SelectedPage = page;
+        NewAirport = "";
+    }
+
+    /// <summary>Drops an airport from the list and forgets its own settings. A profile airport returns on the next sync.</summary>
+    [RelayCommand]
+    private void RemoveAirport(AirportViewModel? page)
+    {
+        if (page is null) return;
+        if (SelectedPage == page) SelectedPage = Overview;
+        Pages.Remove(page);
+        Save();
+    }
+
+    private static bool IsIcao(string s) => s.Length == 4 && s.All(char.IsLetterOrDigit);
+
+    // ---- defaults (edited in the Settings window) ----
+
+    public RuleSetEditor DefaultRules { get; }
+    public FrequencySetEditor DefaultFrequencies { get; }
 
     // ---- status ----
 
@@ -153,7 +147,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<StationRow> Stations { get; } = [];
     public ObservableCollection<string> LogLines { get; } = [];
 
-
     // ---- settings ----
 
     [ObservableProperty] private int _intervalMinutes;
@@ -166,12 +159,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _closeToTray;
-    [ObservableProperty] private string _newAirport = "";
-    [ObservableProperty] private string? _selectedAirport;
+    [ObservableProperty] private string _newConnectAirport = "";
+    [ObservableProperty] private string? _selectedConnectAirport;
 
-    public ObservableCollection<string> Airports { get; } = [];
-    public ObservableCollection<RuleToggle> Rules { get; } = [];
-    public ObservableCollection<FrequencyRoleSetting> Frequencies { get; } = [];
+    /// <summary>"Connect only these airports": the global list, separate from the airport list on the left.</summary>
+    public ObservableCollection<string> ConnectAirports { get; } = [];
 
     partial void OnIntervalMinutesChanged(int value) => Save();
     partial void OnMaxConnectionsChanged(int value) => Save();
@@ -210,13 +202,15 @@ public sealed partial class MainViewModel : ObservableObject
         TrayHintShown = _settings.TrayHintShown,
         IntervalMinutes = IntervalMinutes,
         MaxConnections = MaxConnections,
-        Airports = [.. Airports],
+        Airports = [.. ConnectAirports],
         AutoConnectActivePosition = AutoConnectActivePosition,
         ConnectProfileStations = ConnectProfileStations,
         LaunchVatis = LaunchVatis,
         Approval = Approval,
-        DisabledRules = Rules.Where(r => !r.Enabled).Select(r => r.Id).ToList(),
-        Frequencies = Frequencies.Where(f => f.Mode != FrequencyMode.Off).ToDictionary(f => f.Role, f => f.ToSetting()),
+        DisabledRules = DefaultRules.Disabled,
+        Frequencies = DefaultFrequencies.ToDictionary(),
+        KnownAirports = Airports.Select(a => a.Icao).ToList(),
+        AirportOverrides = Airports.ToDictionary(a => a.Icao, a => a.ToSettings()),
         StartSyncOnLaunch = StartSyncOnLaunch,
         StartWithWindows = StartWithWindows,
         StartMinimized = StartMinimized,
@@ -232,26 +226,26 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsNote = IsRunning ? "Changes apply the next time you press Start." : "";
     }
 
-    // ---- airports ----
+    // ---- connect list ----
 
     [RelayCommand]
-    private void AddAirport()
+    private void AddConnectAirport()
     {
-        var icao = NewAirport.Trim().ToUpperInvariant();
-        if (icao.Length != 4 || !icao.All(char.IsLetterOrDigit))
+        var icao = NewConnectAirport.Trim().ToUpperInvariant();
+        if (!IsIcao(icao))
         {
-            AddLog($"'{NewAirport.Trim()}' is not a 4-letter airport code (for example KSFO).");
+            AddLog($"'{NewConnectAirport.Trim()}' is not a 4-letter airport code (for example KSFO).");
             return;
         }
-        if (!Airports.Contains(icao)) { Airports.Add(icao); Save(); }
-        NewAirport = "";
+        if (!ConnectAirports.Contains(icao)) { ConnectAirports.Add(icao); Save(); }
+        NewConnectAirport = "";
     }
 
     [RelayCommand]
-    private void RemoveAirport()
+    private void RemoveConnectAirport()
     {
-        if (SelectedAirport is null) return;
-        Airports.Remove(SelectedAirport);
+        if (SelectedConnectAirport is null) return;
+        ConnectAirports.Remove(SelectedConnectAirport);
         Save();
     }
 
@@ -298,13 +292,26 @@ public sealed partial class MainViewModel : ObservableObject
         LastSync = s.LastSync is { } l ? l.ToLocalTime().ToString("HH:mm:ss") : "Never";
         NextSync = s.NextSync is { } n && s.Phase == SyncPhase.Idle ? n.ToLocalTime().ToString("HH:mm:ss") : "";
 
+        var rows = s.Stations.Select(st => new StationRow(
+            st.Key,
+            st.Connected ? "Connected" : "Not connected",
+            !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
+            st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "")).ToList();
+
         Stations.Clear();
-        foreach (var st in s.Stations)
-            Stations.Add(new StationRow(
-                st.Key,
-                st.Connected ? "Connected" : "Not connected",
-                !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
-                st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : ""));
+        foreach (var r in rows) Stations.Add(r);
+
+        // Airports found in the open vATIS profile join the list (and are remembered for next time).
+        var added = false;
+        foreach (var icao in rows.Select(r => r.Key[..4].ToUpperInvariant()).Distinct())
+        {
+            if (Airports.Any(a => a.Icao == icao)) continue;
+            InsertAirport(NewAirportPage(icao));
+            added = true;
+        }
+        foreach (var page in Airports)
+            page.UpdateStations(rows.Where(r => string.Equals(r.Key[..4], page.Icao, StringComparison.OrdinalIgnoreCase)));
+        if (added) Save();
     }
 
     private static (string Headline, string Detail) Describe(SyncStatus s) => s.Phase switch

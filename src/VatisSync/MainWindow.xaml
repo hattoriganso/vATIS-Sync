@@ -2,212 +2,181 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:VatisSync.ViewModels"
-        Title="vATIS-Sync" Width="640" Height="520" MinWidth="520" MinHeight="420"
+        Title="vATIS-Sync" Width="900" Height="620" MinWidth="720" MinHeight="480"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" FontSize="13">
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="14,6"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="14,5"/>
-            <Setter Property="MinWidth" Value="72"/>
-        </Style>
-        <Style x:Key="Section" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="0,14,0,6"/>
-        </Style>
-        <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-        </Style>
-    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-    <TabControl Margin="8" Padding="12">
-        <!-- STATUS -->
-        <TabItem Header="Status">
-            <DockPanel>
-                <Grid DockPanel.Dock="Top">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="{Binding Headline}" FontSize="22" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+        <!-- TOP BAR: always visible -->
+        <Border Grid.Row="0" Padding="16,10" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
+                        FontSize="15" FontWeight="SemiBold" Padding="26,8" VerticalAlignment="Center"
+                        AutomationProperties.Name="Start or stop syncing"/>
+                <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Headline}" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}"/>
+                    <TextBlock Text="{Binding SettingsNote}" Foreground="#B45309" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Button Grid.Column="2" x:Name="SettingsButton" Click="OnOpenSettings" MinWidth="40" Padding="10,6"
+                        VerticalAlignment="Center" ToolTip="Settings" AutomationProperties.Name="Settings">
+                    <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE713;" FontSize="18"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" MinWidth="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT: Overview pinned, then the airports -->
+            <DockPanel Grid.Column="0" Margin="0,0,0,0">
+                <StackPanel DockPanel.Dock="Bottom" Margin="8" >
+                    <TextBlock Text="Add an airport" Style="{StaticResource Hint}" Margin="0,0,0,4"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddAirportCommand}"
+                                MinWidth="50" Padding="8,3" Margin="6,0,0,0"/>
+                        <TextBox MaxLength="4" CharacterCasing="Upper" VerticalContentAlignment="Center"
+                                 Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="Airport code">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Return" Command="{Binding AddAirportCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </DockPanel>
+                </StackPanel>
+
+                <ListBox ItemsSource="{Binding Pages}" SelectedItem="{Binding SelectedPage}"
+                         BorderThickness="0,0,1,0" HorizontalContentAlignment="Stretch">
+                    <ListBox.Resources>
+                        <DataTemplate DataType="{x:Type vm:OverviewPage}">
+                            <TextBlock Text="Overview" FontWeight="SemiBold" Padding="4,6"/>
+                        </DataTemplate>
+                        <DataTemplate DataType="{x:Type vm:AirportViewModel}">
+                            <DockPanel Margin="4,6" Background="Transparent">
+                                <DockPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Remove from list and reset its settings" Click="OnRemoveAirport"/>
+                                    </ContextMenu>
+                                </DockPanel.ContextMenu>
+                                <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
+                                         Stroke="#16A34A" StrokeThickness="1.5">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="Transparent"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                    <Setter Property="Fill" Value="#16A34A"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding Icao}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.Resources>
+                </ListBox>
+            </DockPanel>
+
+            <!-- RIGHT: the Overview, or the selected airport -->
+            <Grid Grid.Column="1" Margin="16,12,16,12">
+
+                <!-- Overview: stations and log -->
+                <DockPanel Visibility="{Binding IsOverviewSelected, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <TextBlock Text="Last sync: " Style="{StaticResource Hint}"/>
+                        <TextBlock Text="{Binding LastSync}" Margin="0,0,24,0"/>
+                        <TextBlock Text="Next sync: " Style="{StaticResource Hint}"/>
+                        <TextBlock Text="{Binding NextSync}"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Content="{Binding StartStopText}" Command="{Binding StartStopCommand}"
-                            FontSize="15" FontWeight="SemiBold" Padding="26,9" VerticalAlignment="Center"
-                            AutomationProperties.Name="Start or stop syncing"/>
-                </Grid>
+                    <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" MinHeight="90"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*" MinHeight="90"/>
+                        </Grid.RowDefinitions>
+                        <ListView Grid.Row="0" ItemsSource="{Binding Stations}">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Station" Width="110" DisplayMemberBinding="{Binding Key}"/>
+                                    <GridViewColumn Header="Connection" Width="120" DisplayMemberBinding="{Binding Connection}"/>
+                                    <GridViewColumn Header="D-ATIS" Width="140" DisplayMemberBinding="{Binding Datis}"/>
+                                    <GridViewColumn Header="Updated" Width="90" DisplayMemberBinding="{Binding LastUpdated}"/>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <DockPanel Grid.Row="1" Margin="0,14,0,4">
+                            <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearLogCommand}"/>
+                            <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ListBox Grid.Row="2" x:Name="LogList" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </DockPanel>
 
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,12,0,0">
-                    <TextBlock Text="Last sync: " Style="{StaticResource Hint}"/>
-                    <TextBlock Text="{Binding LastSync}" Margin="0,0,24,0"/>
-                    <TextBlock Text="Next sync: " Style="{StaticResource Hint}"/>
-                    <TextBlock Text="{Binding NextSync}"/>
-                </StackPanel>
+                <!-- One airport -->
+                <ContentControl Content="{Binding SelectedAirport}"
+                                Visibility="{Binding IsAirportSelected, Converter={StaticResource BoolToVisibility}}">
+                    <ContentControl.ContentTemplate>
+                        <DataTemplate DataType="{x:Type vm:AirportViewModel}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
 
-                <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
-                <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="0,8,0,0"
-                           Text="Stations that are not connected are skipped on refresh. Choose which airports to connect on the Airports tab."/>
-                <ListView ItemsSource="{Binding Stations}">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Header="Station" Width="110" DisplayMemberBinding="{Binding Key}"/>
-                            <GridViewColumn Header="Connection" Width="120" DisplayMemberBinding="{Binding Connection}"/>
-                            <GridViewColumn Header="D-ATIS" Width="140" DisplayMemberBinding="{Binding Datis}"/>
-                            <GridViewColumn Header="Updated" Width="90" DisplayMemberBinding="{Binding LastUpdated}"/>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </DockPanel>
-        </TabItem>
+                                    <TextBlock Text="Stations" Style="{StaticResource Section}"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Visibility="{Binding HasNoStations, Converter={StaticResource BoolToVisibility}}"
+                                               Text="No D-ATIS station for this airport was found in your vATIS profile on the last run. Its settings are kept and apply as soon as one appears."/>
+                                    <ItemsControl ItemsSource="{Binding Stations}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:StationRow}">
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <TextBlock Text="{Binding Key}" Width="110" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Connection}" Width="120"/>
+                                                    <TextBlock Text="{Binding Datis}" Width="140"/>
+                                                    <TextBlock Text="{Binding LastUpdated}" Style="{StaticResource Hint}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
 
-        <!-- AIRPORTS -->
-        <TabItem Header="Airports">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Style="{StaticResource Hint}"
-                           Text="Airports to connect when you press Start. Leave this empty to follow the position you last used in CRC (tower, ground, delivery or ramp), or else to connect the D-ATIS stations found in your open vATIS profile (see Settings). Text is always kept up to date for every D-ATIS station in the profile."/>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,12,0,8">
-                    <TextBox Width="110" MaxLength="4" Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
-                             CharacterCasing="Upper" VerticalContentAlignment="Center"
-                             AutomationProperties.Name="Airport code">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Return" Command="{Binding AddAirportCommand}"/>
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <Button Content="Add" Command="{Binding AddAirportCommand}" Margin="8,0,0,0"/>
-                    <Button Content="Remove selected" Command="{Binding RemoveAirportCommand}" Margin="8,0,0,0"/>
-                </StackPanel>
-                <ListBox ItemsSource="{Binding Airports}" SelectedItem="{Binding SelectedAirport}"/>
-            </DockPanel>
-        </TabItem>
+                                    <TextBlock Text="Rules" Style="{StaticResource Section}"/>
+                                    <CheckBox IsChecked="{Binding UseDefaultRules}" Content="Use the default settings" Margin="0,0,0,8"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Visibility="{Binding UseDefaultRules, Converter={StaticResource BoolToVisibility}}"
+                                               Text="This airport follows the rules chosen under Settings (the gear). Untick to set them for this airport only."/>
+                                    <ItemsControl ItemsSource="{Binding Rules.Rules}"
+                                                  Visibility="{Binding CustomRules, Converter={StaticResource BoolToVisibility}}"/>
 
-        <!-- RULES -->
-        <TabItem Header="Rules">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Style="{StaticResource Hint}"
-                           Text="Rules clean real-world text that does not make sense on VATSIM. Switch off any you do not want."/>
-                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button Content="Open my rules file" Command="{Binding OpenRulesFileCommand}"/>
-                    <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="10,0,0,0"
-                               Text="For rules of your own for a single airport."/>
-                </StackPanel>
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <ItemsControl ItemsSource="{Binding Rules}" Margin="0,10,0,0">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="0,0,0,10">
-                                        <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Hint}" Margin="22,2,0,0"/>
+                                    <TextBlock Text="Frequencies" Style="{StaticResource Section}"/>
+                                    <CheckBox IsChecked="{Binding UseDefaultFrequencies}" Content="Use the default settings" Margin="0,0,0,8"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Visibility="{Binding UseDefaultFrequencies, Converter={StaticResource BoolToVisibility}}"
+                                               Text="This airport follows the frequency settings chosen under Settings (the gear). Untick to set them for this airport only."/>
+                                    <StackPanel Visibility="{Binding CustomFrequencies, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
+                                                   Text="Keep the text, remove the instruction, or replace the frequency with one you type. The ATIS and Flight Service frequencies are never changed."/>
+                                        <ItemsControl ItemsSource="{Binding Frequencies.Rows}"/>
                                     </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <TextBlock Text="Frequencies" Style="{StaticResource Section}"/>
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
-                                   Text="Real ATIS tells pilots to contact a position on a frequency, and on VATSIM that controller may not be online. For each position choose to keep the text, remove the instruction, or replace the frequency with one you type. The ATIS and Flight Service frequencies are never changed."/>
-                        <ItemsControl ItemsSource="{Binding Frequencies}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="190"/>
-                                            <ColumnDefinition Width="120"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Name}"/>
-                                            <TextBlock Text="{Binding Example}" Style="{StaticResource Hint}" FontSize="11"/>
-                                        </StackPanel>
-                                        <ComboBox Grid.Column="1" VerticalAlignment="Top"
-                                                  ItemsSource="{x:Static vm:MainViewModel.FrequencyModeChoices}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Mode"
-                                                  SelectedValue="{Binding Mode}"/>
-                                        <TextBox Grid.Column="2" VerticalAlignment="Top" Margin="8,0,0,0"
-                                                 Text="{Binding Frequency, UpdateSourceTrigger=LostFocus}"
-                                                 Visibility="{Binding IsOverride, Converter={StaticResource BoolToVisibility}}"/>
-                                        <TextBlock Grid.Column="3" Margin="10,2,0,0" Foreground="#B45309"
-                                                   Text="{Binding FrequencyProblem}" Style="{StaticResource Hint}"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </ScrollViewer>
-            </DockPanel>
-        </TabItem>
-
-        <!-- SETTINGS -->
-        <TabItem Header="Settings">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <TextBlock Text="Syncing" Style="{StaticResource Section}" Margin="0,0,0,6"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Refresh every" VerticalAlignment="Center"/>
-                        <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding IntervalMinutes}"
-                                  AutomationProperties.Name="Refresh interval in minutes">
-                            <ComboBoxItem Content="1" Tag="1"/>
-                            <ComboBoxItem Content="2" Tag="2"/>
-                            <ComboBoxItem Content="5" Tag="5"/>
-                            <ComboBoxItem Content="10" Tag="10"/>
-                            <ComboBoxItem Content="15" Tag="15"/>
-                            <ComboBoxItem Content="30" Tag="30"/>
-                        </ComboBox>
-                        <TextBlock Text="minutes" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Connect at most" VerticalAlignment="Center"/>
-                        <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding MaxConnections}"
-                                  AutomationProperties.Name="Maximum ATIS connections">
-                            <ComboBoxItem Content="1" Tag="1"/>
-                            <ComboBoxItem Content="2" Tag="2"/>
-                            <ComboBoxItem Content="3" Tag="3"/>
-                            <ComboBoxItem Content="4" Tag="4"/>
-                        </ComboBox>
-                        <TextBlock Text="stations at once" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <CheckBox IsChecked="{Binding AutoConnectActivePosition}" Margin="0,4"
-                              Content="Follow the position I last used in CRC when no airports are chosen"/>
-                    <CheckBox IsChecked="{Binding ConnectProfileStations}" Margin="0,4"
-                              Content="Otherwise connect every D-ATIS station in my open vATIS profile (up to the limit)"/>
-                    <CheckBox IsChecked="{Binding LaunchVatis}" Margin="0,4"
-                              Content="Open vATIS for me if it is not running"/>
-
-                    <TextBlock Text="Changes to a connected ATIS" Style="{StaticResource Section}"/>
-                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.ApprovalChoices}" DisplayMemberPath="Label"
-                              SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
-                              MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
-                    <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
-                               Text="Before a refresh changes the text of an ATIS you are connected to, you see what would change and decide. The first fill when you press Start never asks."/>
-
-                    <TextBlock Text="This app" Style="{StaticResource Section}"/>
-                    <CheckBox IsChecked="{Binding StartSyncOnLaunch}" Margin="0,4"
-                              Content="Start syncing as soon as the app opens"/>
-                    <CheckBox IsChecked="{Binding StartWithWindows}" Margin="0,4"
-                              Content="Start the app when Windows starts"/>
-                    <CheckBox IsChecked="{Binding StartMinimized}" Margin="0,4"
-                              Content="Start minimized to the tray"/>
-                    <CheckBox IsChecked="{Binding CloseToTray}" Margin="0,4"
-                              Content="Keep running in the tray when I close the window"/>
-
-                    <TextBlock Text="{Binding SettingsNote}" Style="{StaticResource Hint}" Margin="0,14,0,0"/>
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- LOG -->
-        <TabItem Header="Log">
-            <DockPanel>
-                <Button DockPanel.Dock="Bottom" Content="Clear" Command="{Binding ClearLogCommand}"
-                        HorizontalAlignment="Left" Margin="0,8,0,0"/>
-                <ListBox x:Name="LogList" ItemsSource="{Binding LogLines}" FontFamily="Consolas" FontSize="12"
-                         ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
-            </DockPanel>
-        </TabItem>
-    </TabControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DataTemplate>
+                    </ContentControl.ContentTemplate>
+                </ContentControl>
+            </Grid>
+        </Grid>
+    </Grid>
 </Window>

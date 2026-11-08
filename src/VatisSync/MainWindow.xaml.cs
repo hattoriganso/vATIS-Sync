@@ -28,6 +28,15 @@ public partial class MainWindow : Window
         };
     }
 
+    private void OnOpenSettings(object sender, RoutedEventArgs e) =>
+        new SettingsWindow(_vm) { Owner = this }.ShowDialog();
+
+    private void OnRemoveAirport(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: AirportViewModel airport })
+            _vm.RemoveAirportCommand.Execute(airport);
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         if (!AllowClose && _vm.CloseToTray)
