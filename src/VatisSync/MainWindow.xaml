@@ -234,10 +234,10 @@
                                     </Border>
                                 </StackPanel>
 
-                                <TabControl SelectedIndex="{Binding SelectedTab, Mode=TwoWay}" Padding="0,10,0,0">
+                                <TabControl SelectedIndex="{Binding SelectedTab, Mode=TwoWay}" Padding="0">
                                     <TabItem Header="Summary" Padding="14,6">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <StackPanel Margin="0,0,6,0">
+                                            <StackPanel Margin="16,14,16,16">
                                                 <DockPanel Margin="0,0,0,4">
                                                     <Button DockPanel.Dock="Right" Content="Update now" Command="{Binding Summary.UpdateNowCommand}"/>
                                                     <CheckBox IsChecked="{Binding Summary.ShowChanges}" VerticalAlignment="Center"
@@ -265,7 +265,17 @@
                                                     <TextBlock Text="{Binding Summary.Warning}" TextWrapping="Wrap" Foreground="#1F2937"/>
                                                 </Border>
 
-                                                <TextBlock Text="{Binding Summary.Message}" Style="{StaticResource Hint}" Margin="0,4,0,8"/>
+                                                <TextBlock Text="{Binding Summary.Message}" Margin="0,4,0,8">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                                            <Style.Triggers>
+                                                                <Trigger Property="Text" Value="">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
                                                 <ItemsControl ItemsSource="{Binding Summary.Stations}">
                                                     <ItemsControl.ItemTemplate>
@@ -303,7 +313,7 @@
 
                                     <TabItem Header="Settings" Padding="14,6">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <StackPanel Margin="0,0,6,0">
+                                            <StackPanel Margin="16,14,16,16">
                                                 <TextBlock Text="Rules" Style="{StaticResource Section}" Margin="0,0,0,6"/>
                                                 <CheckBox IsChecked="{Binding UseDefaultRules}" Content="Use the default settings" Margin="0,0,0,8"/>
                                                 <TextBlock Style="{StaticResource Hint}"
