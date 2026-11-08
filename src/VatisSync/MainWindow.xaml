@@ -98,22 +98,22 @@
                     </Border>
 
                     <TextBlock DockPanel.Dock="Top" Text="AIRPORTS" FontSize="11" FontWeight="SemiBold"
-                               Style="{StaticResource Hint}" Margin="16,18,8,4"/>
+                               Style="{StaticResource Hint}" Margin="21,18,8,4"/>
 
                     <!-- Where the airports come from: the open vATIS profile -->
-                    <StackPanel DockPanel.Dock="Bottom" Margin="12,8,12,12">
+                    <StackPanel DockPanel.Dock="Bottom" Margin="21,8,12,12">
                         <TextBlock Text="{Binding DiscoveryText}" Style="{StaticResource Hint}" FontSize="12" Margin="0,0,0,6"/>
                         <Button Content="{Binding DiscoveryButtonText}" Command="{Binding RetryDiscoveryCommand}"
                                 Padding="10,5" HorizontalAlignment="Left"/>
                     </StackPanel>
 
                     <Grid>
-                    <ListBox Margin="6,0" ItemsSource="{Binding Airports}" SelectedItem="{Binding SelectedAirport, Mode=TwoWay}"
+                    <ListBox Margin="8,0" ItemsSource="{Binding Airports}" SelectedItem="{Binding SelectedAirport, Mode=TwoWay}"
                              Visibility="{Binding HasAirports, Converter={StaticResource BoolToVisibility}}"
                              BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:AirportViewModel}">
-                                <DockPanel Margin="4,5" Background="Transparent">
+                                <DockPanel Margin="11,5,9,5" Background="Transparent">
                                     <DockPanel.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem Header="Hide from this list (its settings are kept)" Click="OnRemoveAirport"/>
