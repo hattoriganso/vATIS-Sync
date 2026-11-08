@@ -28,7 +28,17 @@
                 <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Headline}" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}"/>
-                    <TextBlock Text="{Binding SettingsNote}" Foreground="#B45309" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding SettingsNote}" Foreground="#B45309" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
                 <Button Grid.Column="2" x:Name="SettingsButton" Click="OnOpenSettings" MinWidth="40" Padding="10,6"
                         VerticalAlignment="Center" ToolTip="Settings" AutomationProperties.Name="Settings">
