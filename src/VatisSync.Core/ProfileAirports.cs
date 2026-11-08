@@ -13,4 +13,15 @@ public static class ProfileAirports
             .Distinct()
             .Order(StringComparer.Ordinal)
             .ToList();
+
+    /// <summary>
+    /// The stations that are in the profile but are skipped because they have no preset named exactly "D-ATIS" (for example a
+    /// brand-new empty station), by station name as vATIS shows it ("KJFK", "KMIA_D"), alphabetical.
+    /// </summary>
+    public static List<string> WithoutDatisPreset(IEnumerable<VatisStation> stations) =>
+        stations.Where(s => !s.HasDatisPreset && s.Name.Length >= 4)
+            .Select(s => s.Key)
+            .Distinct()
+            .Order(StringComparer.Ordinal)
+            .ToList();
 }

@@ -52,6 +52,12 @@ public sealed class ProfileDiscovery(
     /// <summary>Raised (from a background thread) each time vATIS answers: the airports (ICAO, alphabetical) that have a D-ATIS station.</summary>
     public event Action<IReadOnlyList<string>>? AirportsFound;
 
+    /// <summary>
+    /// Raised (from a background thread, right after <see cref="AirportsFound"/>) when the profile has stations that were skipped
+    /// because they have no preset named "D-ATIS". Never raised with an empty list.
+    /// </summary>
+    public event Action<IReadOnlyList<string>>? StationsWithoutPreset;
+
     public bool IsRunning => _run is { IsCompleted: false };
 
     /// <summary>Begins trying. Does nothing if already running.</summary>
@@ -126,10 +132,14 @@ public sealed class ProfileDiscovery(
         attempt.CancelAfter(_attemptTimeout);
         try
         {
-            var airports = ProfileAirports.From(await source(attempt.Token).ConfigureAwait(false));
+            var stations = await source(attempt.Token).ConfigureAwait(false);
+            var airports = ProfileAirports.From(stations);
+            var skipped = ProfileAirports.WithoutDatisPreset(stations);
             _failures = 0;
             Set(new DiscoveryState(DiscoveryPhase.Found));
             try { AirportsFound?.Invoke(airports); } catch { /* a listener's bug must not stop the loop */ }
+            if (skipped.Count > 0)
+                try { StationsWithoutPreset?.Invoke(skipped); } catch { /* same */ }
             return true;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)

@@ -194,4 +194,33 @@ public class ProfileDiscoveryTests
         Assert.Equal(DiscoveryPhase.Idle, r.Discovery.State.Phase);
         Assert.Equal(calls, r.Vatis.Calls);
     }
+
+    [Fact]
+    public async Task Stations_without_the_preset_are_reported_once_per_read_and_never_as_empty()
+    {
+        var reads = 0;
+        var d = new ProfileDiscovery(_ =>
+        {
+            var n = Interlocked.Increment(ref reads);
+            return Task.FromResult<IReadOnlyList<VatisStation>>(n == 1
+                ? [Station("KSFO"), new VatisStation("id-new", "KJFK", "Combined", [])]
+                : [Station("KSFO"), Station("KJFK")]); // the user added the preset
+        }, Delay, Tick);
+        var skipped = new ConcurrentQueue<IReadOnlyList<string>>();
+        var found = new ConcurrentQueue<IReadOnlyList<string>>();
+        d.StationsWithoutPreset += skipped.Enqueue;
+        d.AirportsFound += found.Enqueue;
+
+        d.Start();
+        await WaitFor(() => found.Count == 1, "the first read");
+        Assert.Equal(["KJFK"], skipped.Single());
+        Assert.Equal(["KSFO"], found.Single()); // KJFK is not offered as an airport
+
+        d.RetryNow();
+        await WaitFor(() => found.Count == 2, "the second read");
+        await d.StopAsync();
+
+        Assert.Single(skipped); // nothing skipped the second time, so no second report
+        Assert.Equal(["KJFK", "KSFO"], found.Last());
+    }
 }

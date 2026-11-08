@@ -31,4 +31,27 @@ public class ProfileAirportsTests
         Assert.Empty(ProfileAirports.From([]));
         Assert.Empty(ProfileAirports.From([Station("ABC")])); // not an ICAO
     }
+
+    [Fact]
+    public void Stations_without_the_datis_preset_are_reported_by_name()
+    {
+        var skipped = ProfileAirports.WithoutDatisPreset([
+            Station("KSFO"),                                  // fine
+            Station("KJFK", "Combined", "Manual"),             // has presets, but not D-ATIS
+            new VatisStation("id-new", "KMIA", "Departure", []), // a new, empty station
+            Station("KMIA", "Arrival"),                         // the arrival one is fine
+            Station("D-ATIS-ish"),                              // not relevant: has the preset
+            Station("ABC", "Combined", "Manual"),               // too short to be an airport
+        ]);
+
+        Assert.Equal(["KJFK", "KMIA_D"], skipped);
+    }
+
+    [Fact]
+    public void The_preset_name_must_match_exactly()
+    {
+        var skipped = ProfileAirports.WithoutDatisPreset([
+            Station("KAAA", "Combined", "d-atis"), Station("KBBB", "Combined", "DATIS"), Station("KCCC", "Combined", "D-ATIS")]);
+        Assert.Equal(["KAAA", "KBBB"], skipped);
+    }
 }

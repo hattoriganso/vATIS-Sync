@@ -38,6 +38,10 @@
   // Log, every time vATIS is read.   {count} airports found, {new} of them new to the list, {failed} failed tries before this one
   "discovery.read": "Read your vATIS profile: {count} D-ATIS {count?airport|airports} found, {new} new. Failed tries before this: {failed}.",
 
+  // Log, every time vATIS is read, when the profile has stations that the app ignores because they have no preset named
+  // exactly D-ATIS (a new, empty station is like this).   {count}, {stations} such as "KJFK, KMIA_D"
+  "discovery.no-preset": "Skipped {count} {count?station|stations} in your vATIS profile with no preset named \"D-ATIS\": {stations}.",
+
   // Yellow bar and Log when vATIS answers but nothing in the profile uses D-ATIS.
   "discovery.empty": "vATIS is open, but none of the stations in your profile use D-ATIS.",
 

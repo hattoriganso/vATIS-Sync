@@ -24,6 +24,7 @@ public static class Msg
     public static readonly MessageKey DiscoveryAttemptFailed = new("discovery.attempt-failed", "problem", "attempt", "seconds");
     public static readonly MessageKey DiscoveryProblem = new("discovery.problem");
     public static readonly MessageKey DiscoveryRead = new("discovery.read", "count", "new", "failed");
+    public static readonly MessageKey DiscoveryNoPreset = new("discovery.no-preset", "count", "stations");
     public static readonly MessageKey DiscoveryEmpty = new("discovery.empty");
     public static readonly MessageKey DiscoveryAdded = new("discovery.added", "count");
     public static readonly MessageKey DiscoveryStale = new("discovery.stale", "count");

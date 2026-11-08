@@ -44,6 +44,8 @@ public sealed partial class MainViewModel : ObservableObject
         _discovery = new ProfileDiscovery(stationsSource ?? EngineFactory.GetProfileStationsAsync);
         _discovery.StateChanged += state => OnUi(() => OnDiscoveryState(state));
         _discovery.AirportsFound += airports => OnUi(() => OnAirportsFound(airports));
+        _discovery.StationsWithoutPreset += stations => OnUi(() =>
+            AddLog(Messages.Get(Msg.DiscoveryNoPreset, new { count = stations.Count, stations = string.Join(", ", stations) })));
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
