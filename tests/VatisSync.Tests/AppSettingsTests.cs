@@ -152,4 +152,76 @@ public class AppSettingsTests : TempDirTests
         File.WriteAllText(SettingsPath, "{ \"frequencies\": { \"ground\": { \"mode\": \"remove\" } } }");
         Assert.Equal(FrequencyMode.Remove, new SettingsStore(SettingsPath).Load().Frequencies[FrequencyRole.Ground].Mode);
     }
+
+    [Fact]
+    public void Airport_overrides_and_known_airports_round_trip()
+    {
+        var store = new SettingsStore(SettingsPath);
+        store.Save(new AppSettings
+        {
+            KnownAirports = ["ksfo", "KOAK", "bad"],
+            AirportOverrides = new()
+            {
+                ["ksfo"] = new AirportSettings
+                {
+                    UseDefaultFrequencies = false,
+                    Frequencies = new() { [FrequencyRole.Ground] = new(FrequencyMode.Override, "121.9") },
+                },
+                ["KOAK"] = new AirportSettings(), // follows the defaults everywhere: not worth storing
+                ["toolong"] = new AirportSettings { UseDefaultRules = false },
+            },
+        });
+
+        var s = store.Load();
+        Assert.Equal(["KSFO", "KOAK"], s.KnownAirports);
+        var ksfo = Assert.Single(s.AirportOverrides);
+        Assert.Equal("KSFO", ksfo.Key);
+        Assert.False(ksfo.Value.UseDefaultFrequencies);
+        Assert.True(ksfo.Value.UseDefaultRules);
+        Assert.Equal("121.9", ksfo.Value.Frequencies[FrequencyRole.Ground].Frequency);
+    }
+
+    [Fact]
+    public void A_settings_file_from_before_airport_overrides_still_loads()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        File.WriteAllText(SettingsPath, "{ \"intervalMinutes\": 7, \"disabledRules\": [\"drone-laser-reports\"] }");
+        var s = new SettingsStore(SettingsPath).Load();
+        Assert.Equal(7, s.IntervalMinutes);
+        Assert.Empty(s.AirportOverrides);
+        Assert.Empty(s.KnownAirports);
+    }
+
+    [Fact]
+    public void Each_section_of_an_airport_follows_the_defaults_or_its_own_copy()
+    {
+        var defaults = new AppSettings
+        {
+            DisabledRules = ["drone-laser-reports"],
+            Frequencies = new() { [FrequencyRole.Ground] = new(FrequencyMode.Remove) },
+            AirportOverrides = new()
+            {
+                ["KSFO"] = new AirportSettings
+                {
+                    UseDefaultFrequencies = false,
+                    Frequencies = new() { [FrequencyRole.Tower] = new(FrequencyMode.Override, "118.5") },
+                },
+                ["KOAK"] = new AirportSettings { UseDefaultRules = false, DisabledRules = [] },
+            },
+        };
+
+        var o = defaults.ToSyncOptions().PerAirport;
+        Assert.Equal(["KOAK", "KSFO"], o.Keys.Order());
+
+        // KSFO: own frequencies (the default Ground removal does not apply), default rules.
+        Assert.Equal(["drone-laser-reports"], o["KSFO"].DisabledRules);
+        Assert.Equal([FrequencyRole.Tower], o["KSFO"].Frequencies.Keys);
+
+        // KOAK: own rules (all on), default frequencies.
+        Assert.Empty(o["KOAK"].DisabledRules);
+        Assert.Equal(FrequencyMode.Remove, o["KOAK"].Frequencies[FrequencyRole.Ground].Mode);
+
+        // Other airports are absent from PerAirport and use the defaults in SyncOptions.
+        Assert.Equal(["drone-laser-reports"], defaults.ToSyncOptions().DisabledRules);
+    }
 }

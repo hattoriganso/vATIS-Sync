@@ -417,6 +417,53 @@ public class SyncEngineTests
     }
 
     [Fact]
+    public async Task An_airport_that_customizes_frequencies_does_not_use_the_defaults()
+    {
+        var r = new Rig(Rig.Fast() with
+        {
+            Frequencies = new Dictionary<FrequencyRole, FrequencySetting>
+                { [FrequencyRole.Ground] = new(FrequencyMode.Remove) },
+            PerAirport = new Dictionary<string, AirportRules>
+            {
+                ["KOAK"] = new([], new Dictionary<FrequencyRole, FrequencySetting>
+                    { [FrequencyRole.Ground] = new(FrequencyMode.Override, "121.9") }),
+            },
+        });
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK");
+        r.Datis.Entries = [FrequencyEntry(), FrequencyEntry() with { Airport = "KOAK" }];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal("ILS RWY 28R IN USE. TWR FREQ 120.5. TWY B CLSD.", r.Vatis.Configures("KSFO")[^1].Conditions.Trim()); // default: removed
+        Assert.Equal("ILS RWY 28R IN USE. CTC GND ON 121.9 FOR TAXI. TWR FREQ 120.5. TWY B CLSD.", r.Vatis.Configures("KOAK")[^1].Conditions.Trim()); // own: replaced
+    }
+
+    [Fact]
+    public async Task An_airport_can_switch_off_a_built_in_rule_that_stays_on_elsewhere()
+    {
+        var r = new Rig(Rig.Fast() with
+        {
+            PerAirport = new Dictionary<string, AirportRules>
+            {
+                ["KOAK"] = new(["flight-service-pointers"], new Dictionary<FrequencyRole, FrequencySetting>()),
+            },
+        });
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK");
+        r.Datis.Entries = [FssEntry(), FssEntry() with { Airport = "KOAK" }];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.DoesNotContain("FSS", r.Vatis.Configures("KSFO")[^1].Conditions);
+        Assert.Contains("FSS", r.Vatis.Configures("KOAK")[^1].Conditions);
+    }
+
+    [Fact]
     public async Task Frequencies_are_left_alone_by_default()
     {
         var r = new Rig();

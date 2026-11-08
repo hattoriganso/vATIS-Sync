@@ -29,6 +29,9 @@ public sealed record SyncOptions
     /// <summary>Ids of built-in cleanup rules (see <see cref="BuiltInRules"/>) the user switched off.</summary>
     public IReadOnlyList<string> DisabledRules { get; init; } = [];
 
+    /// <summary>Airports (ICAO) that customize their rules and/or frequencies. Any other airport uses <see cref="DisabledRules"/> and <see cref="Frequencies"/>.</summary>
+    public IReadOnlyDictionary<string, AirportRules> PerAirport { get; init; } = new Dictionary<string, AirportRules>();
+
     /// <summary>What to do with the frequencies of each position (see <see cref="FrequencyDetector"/>). Missing roles are Off.</summary>
     public IReadOnlyDictionary<FrequencyRole, FrequencySetting> Frequencies { get; init; } =
         new Dictionary<FrequencyRole, FrequencySetting>();

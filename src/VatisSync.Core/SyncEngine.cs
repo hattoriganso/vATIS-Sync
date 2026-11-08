@@ -164,7 +164,7 @@ public sealed class SyncEngine(
         var stations = await DatisStationsAsync(ct).ConfigureAwait(false);
         var airports = stations.Select(s => s.Key[..4]).Distinct();
         var rules = await replacements.GetAsync(airports, ct).ConfigureAwait(false);
-        var builtIn = BuiltInRules.PatternsFor(options.DisabledRules);
+        var builtInByAirport = new Dictionary<string, ReplacementRules>();
 
         var fetch = await datis.FetchAsync(ct).ConfigureAwait(false);
         if (!fetch.Succeeded)
@@ -176,6 +176,11 @@ public sealed class SyncEngine(
         {
             var state = await client.GetAtisAsync(s.Id, ct).ConfigureAwait(false);
 
+            var (disabledRules, frequencies) = RulesFor(s.Key[..4]);
+            var icao = s.Key[..4].ToUpperInvariant();
+            if (!builtInByAirport.TryGetValue(icao, out var builtIn))
+                builtInByAirport[icao] = builtIn = BuiltInRules.PatternsFor(disabledRules);
+
             var stationRules = new List<KeyValuePair<string, string>>(builtIn);
             if (rules.TryGetValue(s.Key[..4], out var airportRules)) stationRules.AddRange(airportRules);
             if (removals is not null && removals.TryGetValue(s.Key, out var deleted))
@@ -183,7 +188,7 @@ public sealed class SyncEngine(
 
             var contractions = DatisFormatter.BuildContractions(
                 await client.GetContractionsAsync(s.Key, ct).ConfigureAwait(false));
-            var text = DatisFormatter.Format(s.Key, fetch.Entries, now, stationRules, contractions, options.Frequencies);
+            var text = DatisFormatter.Format(s.Key, fetch.Entries, now, stationRules, contractions, frequencies);
 
             if (connectedOnly && !text.IsAvailable)
             {
@@ -207,6 +212,13 @@ public sealed class SyncEngine(
 
             Record(s.Key, state.IsConnected, text.IsAvailable, now);
         }
+    }
+
+    /// <summary>The disabled built-in rules and frequency handling for an airport: its own if it customizes them, else the defaults.</summary>
+    private (IReadOnlyList<string> DisabledRules, IReadOnlyDictionary<FrequencyRole, FrequencySetting> Frequencies) RulesFor(string icao)
+    {
+        if (options.PerAirport.TryGetValue(icao.ToUpperInvariant(), out var own)) return (own.DisabledRules, own.Frequencies);
+        return (options.DisabledRules, options.Frequencies);
     }
 
     // ---- approval ----

@@ -30,8 +30,14 @@ public sealed record AppSettings
     /// <summary>Built-in rule ids the user switched off.</summary>
     public List<string> DisabledRules { get; init; } = [];
 
-    /// <summary>Per-position handling of frequencies in the text. Roles not listed are Off.</summary>
+    /// <summary>Default per-position handling of frequencies. Roles not listed are Off. Airports may customize their own.</summary>
     public Dictionary<FrequencyRole, FrequencySetting> Frequencies { get; init; } = [];
+
+    /// <summary>Airports (ICAO) the app has seen in the open vATIS profile or the user added by hand; shown in the airport list.</summary>
+    public List<string> KnownAirports { get; init; } = [];
+
+    /// <summary>Airports (ICAO) that customize rules and/or frequencies instead of following the defaults.</summary>
+    public Dictionary<string, AirportSettings> AirportOverrides { get; init; } = [];
 
     /// <summary>Start syncing as soon as the app opens.</summary>
     public bool StartSyncOnLaunch { get; init; }
@@ -56,6 +62,8 @@ public sealed record AppSettings
         Airports = CleanIcaos(Airports),
         DisabledRules = (DisabledRules ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
         Frequencies = CleanFrequencies(Frequencies),
+        KnownAirports = CleanIcaos(KnownAirports),
+        AirportOverrides = CleanOverrides(AirportOverrides),
     };
 
     public SyncOptions ToSyncOptions()
@@ -72,17 +80,32 @@ public sealed record AppSettings
             DisabledRules = n.DisabledRules,
             Approval = n.Approval,
             Frequencies = n.Frequencies.ToDictionary(kv => kv.Key, kv => FrequencyDetector.Usable(kv.Value)),
+            PerAirport = n.AirportOverrides.ToDictionary(kv => kv.Key, kv => kv.Value.Resolve(n)),
         };
     }
 
     /// <summary>Drops roles that are Off. An Override with no valid frequency yet is kept (the user may still be typing);
     /// <see cref="ToSyncOptions"/> treats it as Off.</summary>
-    private static Dictionary<FrequencyRole, FrequencySetting> CleanFrequencies(
+    internal static Dictionary<FrequencyRole, FrequencySetting> CleanFrequencies(
         Dictionary<FrequencyRole, FrequencySetting>? frequencies) =>
         (frequencies ?? [])
             .Where(kv => kv.Value is not null)
             .Where(kv => kv.Value.Mode != FrequencyMode.Off)
             .ToDictionary(kv => kv.Key, kv => kv.Value with { Frequency = kv.Value.Frequency?.Trim() });
+
+    /// <summary>ICAO keys upper-cased; entries that follow the defaults everywhere are dropped.</summary>
+    private static Dictionary<string, AirportSettings> CleanOverrides(Dictionary<string, AirportSettings>? overrides)
+    {
+        var result = new Dictionary<string, AirportSettings>();
+        foreach (var (key, value) in overrides ?? [])
+        {
+            var icao = key?.Trim().ToUpperInvariant() ?? "";
+            if (icao.Length != 4 || !icao.All(char.IsLetterOrDigit) || value is null) continue;
+            var cleaned = value.Cleaned();
+            if (!cleaned.IsDefault) result[icao] = cleaned;
+        }
+        return result;
+    }
 
     private static List<string> CleanIcaos(IEnumerable<string>? airports) =>
         (airports ?? []).Select(a => a?.Trim().ToUpperInvariant() ?? "")
