@@ -7,6 +7,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
         <Style TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}"/>
             <Setter Property="Padding" Value="14,5"/>
             <Setter Property="MinWidth" Value="72"/>
             <Setter Property="Background" Value="#FFE1E1E1"/>
@@ -40,6 +41,18 @@
                                 <Setter TargetName="Chrome" Property="Opacity" Value="0.5"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- One keyboard focus ring for every control: a 2px blue rounded outline just outside the control. -->
+        <Style x:Key="FocusRing">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="-3" RadiusX="6" RadiusY="6" Stroke="#FF0078D7" StrokeThickness="2"
+                                   SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -117,6 +130,7 @@
             </Setter>
         </Style>
         <Style TargetType="TabItem">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
@@ -140,6 +154,7 @@
         </Style>
 
         <Style TargetType="ListBoxItem">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}"/>
             <Setter Property="Padding" Value="2"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
@@ -180,6 +195,7 @@
             </Setter>
         </Style>
         <Style TargetType="ComboBox">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}"/>
             <Setter Property="Padding" Value="8,3,26,3"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -219,6 +235,7 @@
 
         <!-- The Start / Stop button: green while stopped (Start), red while syncing (Stop). -->
         <Style x:Key="StartStopButton" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="#FF15803D"/>
             <Setter Property="BorderThickness" Value="0"/>
