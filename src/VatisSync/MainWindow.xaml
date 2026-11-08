@@ -219,7 +219,19 @@
                         <TextBlock Text="Last sync: " Style="{StaticResource Hint}"/>
                         <TextBlock Text="{Binding LastSync}" Margin="0,0,24,0"/>
                         <TextBlock Text="Next sync: " Style="{StaticResource Hint}"/>
-                        <TextBlock Text="{Binding NextSync}"/>
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <!-- A dash while there is no next sync, so the line never has a blank where a time goes -->
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding NextSync}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding NextSync}" Value="">
+                                            <Setter Property="Text" Value="&#x2014;"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
                     <Grid>
@@ -229,6 +241,7 @@
                             <RowDefinition Height="*" MinHeight="90"/>
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="#FFACACAC">
+                        <Grid>
                         <ListView ItemsSource="{Binding Stations}" BorderThickness="0">
                             <ListView.View>
                                 <GridView>
@@ -239,6 +252,23 @@
                                 </GridView>
                             </ListView.View>
                         </ListView>
+                        <!-- Shown while the list is empty, which is until syncing has started -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,28,24,0" IsHitTestVisible="False">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Stations.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="No stations yet" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Style="{StaticResource Hint}" TextAlignment="Center" Margin="0,4,0,0"
+                                       Text="Press Start. Your stations show up here once vATIS-Sync has read them."/>
+                        </StackPanel>
+                        </Grid>
                         </Border>
                         <DockPanel Grid.Row="1" Margin="0,26,0,8">
                             <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearLogCommand}"/>
