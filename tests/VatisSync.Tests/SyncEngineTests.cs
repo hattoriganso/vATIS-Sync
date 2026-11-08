@@ -849,6 +849,25 @@ public class SyncEngineTests
     }
 
     [Fact]
+    public async Task A_problem_is_flagged_as_an_error_and_the_flag_clears_when_syncing_resumes()
+    {
+        var r = new Rig();
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [Entry("KSFO")];
+        r.Vatis.Down = true;
+
+        r.Engine.Start();
+        await WaitFor(() => r.Engine.Status.IsError, "an error status while vATIS is down");
+        Assert.Equal(SyncPhase.WaitingForVatis, r.Engine.Status.Phase);
+
+        r.Vatis.Down = false;
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.False(r.Engine.Status.IsError);
+    }
+
+    [Fact]
     public async Task Redoes_the_initial_pass_after_vatis_restarts_midrun()
     {
         var r = new Rig(Rig.Fast() with { Interval = TimeSpan.FromMilliseconds(150) });

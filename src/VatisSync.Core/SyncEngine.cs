@@ -84,12 +84,12 @@ public sealed class SyncEngine(
                 {
                     Info($"vATIS unavailable: {ex.Message}");
                     Publish(SyncPhase.WaitingForVatis,
-                        "Can't reach vATIS. Is it running with its websocket enabled? Retrying…");
+                        "Can't reach vATIS. Is it running with its websocket enabled? Retrying…", isError: true);
                 }
                 catch (Exception ex)
                 {
                     Info($"Unexpected error: {ex}");
-                    Publish(SyncPhase.WaitingForVatis, $"Unexpected error: {ex.Message}. Retrying…");
+                    Publish(SyncPhase.WaitingForVatis, $"Unexpected error: {ex.Message}. Retrying…", isError: true);
                 }
 
                 try { await Task.Delay(options.RetryDelay, ct).ConfigureAwait(false); }
@@ -363,16 +363,17 @@ public sealed class SyncEngine(
             _stations[key] = new StationStatus(
                 key, connected, available ?? prev?.DatisAvailable ?? false, configuredAt ?? prev?.LastConfiguredAt);
         }
-        Publish(_status.Phase, _status.Message, _status.LastSync, _status.NextSync);
+        Publish(_status.Phase, _status.Message, _status.LastSync, _status.NextSync, _status.IsError);
     }
 
-    private void Publish(SyncPhase phase, string? message, DateTimeOffset? lastSync = null, DateTimeOffset? nextSync = null)
+    private void Publish(SyncPhase phase, string? message, DateTimeOffset? lastSync = null, DateTimeOffset? nextSync = null,
+        bool isError = false)
     {
         SyncStatus status;
         lock (_gate)
         {
             status = new SyncStatus(phase, message, lastSync ?? _status.LastSync, nextSync,
-                _stations.Values.OrderBy(s => s.Key, StringComparer.Ordinal).ToList());
+                _stations.Values.OrderBy(s => s.Key, StringComparer.Ordinal).ToList()) { IsError = isError };
             _status = status;
         }
         StatusChanged?.Invoke(this, status);

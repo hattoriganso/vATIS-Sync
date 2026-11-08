@@ -68,5 +68,8 @@ public sealed record SyncStatus(
     DateTimeOffset? NextSync,
     IReadOnlyList<StationStatus> Stations)
 {
+    /// <summary>The message reports a problem (vATIS unreachable, unexpected error), not routine progress.</summary>
+    public bool IsError { get; init; }
+
     public static SyncStatus Initial { get; } = new(SyncPhase.Stopped, null, null, null, []);
 }

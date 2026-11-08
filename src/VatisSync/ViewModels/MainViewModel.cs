@@ -39,8 +39,8 @@ public sealed partial class MainViewModel : ObservableObject
         _engineFactory = engineFactory ?? (o => EngineFactory.Create(o, approver));
         _applyTray = applyTray ?? (_ => { });
 
-        _store.Warning += m => OnUi(() => AddLog(m));
-        EngineFactory.ReplacementStore.Warning += m => OnUi(() => AddLog(m));
+        _store.Warning += m => OnUi(() => { AddLog(m); Notify("settings-file", NoticeKind.Warning, m); });
+        EngineFactory.ReplacementStore.Warning += m => OnUi(() => { AddLog(m); Notify("rules-file", NoticeKind.Warning, m); });
         _settings = _store.Load();
 
         IntervalMinutes = _settings.IntervalMinutes;
@@ -104,13 +104,39 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private string _newAirport = "";
 
+    // ---- messages along the bottom of the window ----
+
+    private const string VatisUnreachable = "vatis-unreachable";
+    private const string FetchAirports = "fetch-airports";
+    private static readonly TimeSpan InfoLifetime = TimeSpan.FromSeconds(6);
+
+    private readonly NoticeBoard _notices = new();
+
+    /// <summary>What the bottom bar shows. Errors and warnings stay until dismissed or resolved; confirmations clear themselves.</summary>
+    public ObservableCollection<Notice> Notices => _notices.Items;
+
+    /// <summary>Shows a message in the bar. Confirmations (<see cref="NoticeKind.Info"/>) clear themselves after a few seconds.</summary>
+    private void Notify(string key, NoticeKind kind, string message)
+    {
+        var notice = _notices.Post(key, kind, message);
+        if (kind != NoticeKind.Info) return;
+        _ = Task.Delay(InfoLifetime).ContinueWith(_ => OnUi(() => _notices.Dismiss(notice)), TaskScheduler.Default);
+    }
+
+    [RelayCommand]
+    private void DismissNotice(Notice? notice)
+    {
+        if (notice is not null) _notices.Dismiss(notice);
+    }
+
     // ---- get the airports from vATIS ----
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GetAirportsFromVatisCommand))]
     private bool _isFetchingAirports;
 
-    /// <summary>What happened the last time the airports were requested from vATIS. Empty until then.</summary>
-    [ObservableProperty] private string _airportsMessage = "";
+    public string GetAirportsButtonText => IsFetchingAirports ? "Asking vATIS…" : "Get airports from vATIS";
+
+    partial void OnIsFetchingAirportsChanged(bool value) => OnPropertyChanged(nameof(GetAirportsButtonText));
 
     /// <summary>
     /// Reads the stations of the profile open in vATIS and adds every airport that has a D-ATIS station to the list.
@@ -120,32 +146,37 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task GetAirportsFromVatis()
     {
         IsFetchingAirports = true;
-        AirportsMessage = "Asking vATIS…";
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             var found = ProfileAirports.From(await _stationsSource(timeout.Token));
+            _notices.Resolve(FetchAirports); // vATIS answered, so an earlier failure no longer applies
             if (found.Count == 0)
             {
-                AirportsMessage = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
+                var message = "vATIS answered, but no station in the open profile has a D-ATIS preset.";
+                AddLog(message);
+                Notify(FetchAirports, NoticeKind.Warning, message);
                 return;
             }
 
             var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
             foreach (var icao in added) InsertAirport(NewAirportPage(icao));
             if (added.Count > 0) Save();
-            AirportsMessage = added.Count > 0
+            var result = added.Count > 0
                 ? $"Added {added.Count} airport{(added.Count == 1 ? "" : "s")} from vATIS."
                 : "Every D-ATIS airport in the open profile is already listed.";
+            AddLog(result);
+            Notify(FetchAirports, NoticeKind.Info, result);
         }
         catch (Exception ex) when (ex is VatisUnavailableException or OperationCanceledException)
         {
-            AirportsMessage = "Could not reach vATIS. Open it, make sure its websocket is enabled, and try again.";
+            var message = "Could not reach vATIS. Open it, make sure its websocket is enabled, and try again.";
+            AddLog(message);
+            Notify(FetchAirports, NoticeKind.Error, message);
         }
         finally
         {
             IsFetchingAirports = false;
-            AddLog(AirportsMessage);
         }
     }
 
@@ -362,6 +393,10 @@ public sealed partial class MainViewModel : ObservableObject
             st.Connected ? "Connected" : "Not connected",
             !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
             st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "")).ToList();
+
+        // A sync problem stays up until the sync is working again (or stopped), not just until the next retry starts.
+        if (s.IsError && s.Message is { } problem) Notify(VatisUnreachable, NoticeKind.Error, problem);
+        else if (s.Phase is SyncPhase.Syncing or SyncPhase.Idle or SyncPhase.Stopped) _notices.Resolve(VatisUnreachable);
 
         Stations.Clear();
         foreach (var r in rows) Stations.Add(r);
