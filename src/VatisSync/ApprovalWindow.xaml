@@ -14,7 +14,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <TextBlock x:Name="Headline" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBlock x:Name="Summary" TextWrapping="Wrap" Margin="0,4,0,0"
-                       Foreground="{DynamicResource HintBrush}"/>
+                       Foreground="{DynamicResource TextSecondary}"/>
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -26,14 +26,14 @@
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="Now in vATIS" FontWeight="SemiBold" Margin="0,0,0,4"/>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" BorderThickness="1"
-                              BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                              BorderBrush="{DynamicResource SidebarBorder}">
                     <TextBlock x:Name="CurrentText" TextWrapping="Wrap" Padding="8" FontFamily="Consolas"/>
                 </ScrollViewer>
             </DockPanel>
             <DockPanel Grid.Column="2">
                 <TextBlock DockPanel.Dock="Top" Text="New (from the real-world D-ATIS)" FontWeight="SemiBold" Margin="0,0,0,4"/>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" BorderThickness="1"
-                              BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                              BorderBrush="{DynamicResource SidebarBorder}">
                     <TextBlock x:Name="NewText" TextWrapping="Wrap" Padding="8" FontFamily="Consolas"/>
                 </ScrollViewer>
             </DockPanel>
@@ -48,7 +48,7 @@
             </StackPanel>
             <TextBlock Text="Keep current leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again."
                        Margin="0,8,0,0" TextWrapping="Wrap" HorizontalAlignment="Right"
-                       Foreground="{DynamicResource HintBrush}"/>
+                       Foreground="{DynamicResource TextSecondary}"/>
         </StackPanel>
     </Grid>
 </Window>

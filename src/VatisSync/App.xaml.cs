@@ -25,6 +25,13 @@ public partial class App : Application
         base.OnStartup(e);
         new SafetyNet(this, _errorLog, () => _vm).Install();
 
+        // Colors come from a palette file; Windows High Contrast gets its own palette, and switching it on or off applies live.
+        ApplyPalette();
+        SystemParameters.StaticPropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(SystemParameters.HighContrast)) Dispatcher.BeginInvoke(ApplyPalette);
+        };
+
         _mutex = new Mutex(initiallyOwned: true, InstanceName, out var isFirst);
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         if (!isFirst)
@@ -54,6 +61,14 @@ public partial class App : Application
         if (!_vm.ShouldStartHidden) _window.Show();
         _vm.StartIfConfigured();
         _vm.StartDiscovery(); // read the airports from the open vATIS profile, retrying until vATIS answers
+    }
+
+    private void ApplyPalette()
+    {
+        // VATISSYNC_FORCE_HC=1 shows the High Contrast palette without switching Windows into High Contrast (for checking it).
+        var highContrast = SystemParameters.HighContrast || Environment.GetEnvironmentVariable("VATISSYNC_FORCE_HC") == "1";
+        var file = highContrast ? "Themes/Palette.HighContrast.xaml" : "Themes/Palette.Light.xaml";
+        Resources.MergedDictionaries[0] = new ResourceDictionary { Source = new Uri(file, UriKind.Relative) };
     }
 
     private void ListenForShowRequests()

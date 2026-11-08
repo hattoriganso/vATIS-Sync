@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:VatisSync.ViewModels"
         Title="Settings" Width="640" Height="620" MinWidth="520" MinHeight="420"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
-        FontFamily="Segoe UI" FontSize="13" Background="#FFF3F3F3">
+        FontFamily="Segoe UI" FontSize="13" Background="{DynamicResource WindowBackground}">
     <DockPanel Margin="16">
         <Button DockPanel.Dock="Bottom" Content="Close" IsDefault="True" IsCancel="True" HorizontalAlignment="Right"
                 Margin="0,12,0,0" Click="OnClose"/>
@@ -115,7 +115,7 @@
                 <ItemsControl ItemsSource="{Binding DefaultFrequencies.Rows}"/>
                 </StackPanel></Border>
 
-                <TextBlock Text="{Binding SettingsNote}" Foreground="#B45309" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                <TextBlock Text="{Binding SettingsNote}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

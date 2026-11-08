@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The same names as Palette.Light.xaml, mapped to the colors the user chose in Windows High Contrast.
+         Text sits on Window, selection is Highlight with HighlightText, and every outline is a solid system color. -->
+    <SolidColorBrush x:Key="Surface" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="WindowBackground" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="SidebarBackground" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="SidebarBorder" Color="{x:Static SystemColors.WindowTextColor}"/>
+
+    <SolidColorBrush x:Key="TextPrimary" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="TextStrong" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="GlyphBrush" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="OnFill" Color="{x:Static SystemColors.HighlightTextColor}"/>
+
+    <SolidColorBrush x:Key="ControlBackground" Color="{x:Static SystemColors.ControlColor}"/>
+    <SolidColorBrush x:Key="ControlBorder" Color="{x:Static SystemColors.ControlTextColor}"/>
+    <SolidColorBrush x:Key="ControlBorderStrong" Color="{x:Static SystemColors.ControlTextColor}"/>
+    <SolidColorBrush x:Key="BorderSubtle" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="TabBackground" Color="{x:Static SystemColors.ControlColor}"/>
+
+    <SolidColorBrush x:Key="Accent" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="AccentHover" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="AccentDark" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="AccentText" Color="{x:Static SystemColors.HotTrackColor}"/>
+    <!-- Hover and pressed keep the control's own colors (text stays readable); the border turns to Highlight -->
+    <SolidColorBrush x:Key="AccentWash" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="AccentWashHover" Color="{x:Static SystemColors.ControlColor}"/>
+    <SolidColorBrush x:Key="AccentWashPressed" Color="{x:Static SystemColors.ControlColor}"/>
+    <SolidColorBrush x:Key="OnAccentWash" Color="{x:Static SystemColors.HighlightTextColor}"/>
+
+    <SolidColorBrush x:Key="SuccessText" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="SuccessMark" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="SuccessWash" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="SuccessFill" Color="{x:Static SystemColors.HighlightColor}"/>
+    <SolidColorBrush x:Key="WarningText" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="WarningMark" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="WarningWash" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="ErrorText" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="ErrorMark" Color="{x:Static SystemColors.WindowTextColor}"/>
+    <SolidColorBrush x:Key="ErrorWash" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="DangerFill" Color="{x:Static SystemColors.HighlightColor}"/>
+
+    <SolidColorBrush x:Key="CodeBackground" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="CodeBorder" Color="{x:Static SystemColors.WindowTextColor}"/>
+</ResourceDictionary>

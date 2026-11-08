@@ -15,7 +15,7 @@
 
         <!-- TOP BAR: always visible -->
         <Border Grid.Row="0" Padding="8,10,16,10" BorderThickness="0,0,0,1"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}">
+                BorderBrush="{DynamicResource BorderSubtle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -45,7 +45,7 @@
                 <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Headline}" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}"/>
-                    <TextBlock Text="{Binding SettingsNote}" Foreground="#B45309" TextWrapping="Wrap">
+                    <TextBlock Text="{Binding SettingsNote}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
@@ -71,9 +71,9 @@
             </Grid.ColumnDefinitions>
 
             <!-- LEFT: the Overview tile, then the airports -->
-            <Border Grid.Column="0" Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+            <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}"
                     BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+                    BorderBrush="{DynamicResource SidebarBorder}">
                 <DockPanel>
                     <!-- Overview: a tile of its own, not a row of the list -->
                     <!-- A real button, so Tab, Enter and Space reach it. Styled like an airport row (see SidebarTile in App.xaml). -->
@@ -100,7 +100,9 @@
                     <!-- Where the airports come from: the open vATIS profile -->
                     <StackPanel DockPanel.Dock="Bottom" Margin="8,8,8,12">
                         <TextBlock Text="{Binding DiscoveryText}" Style="{StaticResource Hint}" FontSize="12" Margin="2,0,2,8"/>
-                        <Button Command="{Binding RetryDiscoveryCommand}" Padding="10,6" HorizontalAlignment="Stretch">
+                        <!-- White, so it stands out from the gray sidebar it sits on -->
+                        <Button Command="{Binding RetryDiscoveryCommand}" Padding="10,6" HorizontalAlignment="Stretch"
+                                Background="{DynamicResource Surface}">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE72C;" FontSize="13"
                                            VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -122,13 +124,13 @@
                                         </ContextMenu>
                                     </DockPanel.ContextMenu>
                                     <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
-                                             Stroke="#16A34A" StrokeThickness="1.5">
+                                             Stroke="{DynamicResource SuccessMark}" StrokeThickness="1.5">
                                         <Ellipse.Style>
                                             <Style TargetType="Ellipse">
                                                 <Setter Property="Fill" Value="Transparent"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                        <Setter Property="Fill" Value="#16A34A"/>
+                                                        <Setter Property="Fill" Value="{DynamicResource SuccessMark}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -140,7 +142,7 @@
                                             Command="{Binding DataContext.RemoveAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE738;" FontSize="12" Foreground="#B45309"/>
+                                        <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE738;" FontSize="12" Foreground="{DynamicResource WarningText}"/>
                                     </Button>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Icao}" FontSize="15">
@@ -148,7 +150,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsStale}" Value="True">
-                                                            <Setter Property="Foreground" Value="#B45309"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                             <Setter Property="ToolTip" Value="No longer in your vATIS profile. Its settings are kept."/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -158,17 +160,17 @@
                                         <TextBlock Text="{Binding StatusText}" FontSize="12">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{DynamicResource HintBrush}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Status}" Value="Started">
-                                                            <Setter Property="Foreground" Value="#15803D"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
                                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Status}" Value="Synced">
-                                                            <Setter Property="Foreground" Value="#1F6FD6"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource AccentText}"/>
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Status}" Value="Stale">
-                                                            <Setter Property="Foreground" Value="#B45309"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -224,7 +226,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*" MinHeight="90"/>
                         </Grid.RowDefinitions>
-                        <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="#FFACACAC">
+                        <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="{DynamicResource ControlBorder}">
                         <Grid>
                         <ListView ItemsSource="{Binding Stations}" BorderThickness="0">
                             <ListView.View>
@@ -268,13 +270,13 @@
                                                 <Setter Property="Background" Value="Transparent"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Kind}" Value="Success">
-                                                        <Setter Property="Background" Value="#FFEAF6EE"/>
+                                                        <Setter Property="Background" Value="{DynamicResource SuccessWash}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Kind}" Value="Warning">
-                                                        <Setter Property="Background" Value="#FFFDF3DC"/>
+                                                        <Setter Property="Background" Value="{DynamicResource WarningWash}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Kind}" Value="Error">
-                                                        <Setter Property="Background" Value="#FFFBE9E9"/>
+                                                        <Setter Property="Background" Value="{DynamicResource ErrorWash}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -282,16 +284,16 @@
                                         <TextBlock Text="{Binding Text}" TextWrapping="Wrap">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Kind}" Value="Success">
-                                                            <Setter Property="Foreground" Value="#FF15803D"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Kind}" Value="Warning">
-                                                            <Setter Property="Foreground" Value="#FF9A5200"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Kind}" Value="Error">
-                                                            <Setter Property="Foreground" Value="#FFB42323"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -312,9 +314,9 @@
                             <DockPanel>
                                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
-                                    <Border Background="#FEF3C7" BorderBrush="#D97706" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
+                                    <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock TextWrapping="Wrap" Foreground="#1F2937"
+                                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextStrong}"
                                                    Text="This airport is no longer in your vATIS profile. Its settings are saved and come back if it returns, but nothing is synced for it. Use the minus button in the list to hide it."/>
                                     </Border>
                                 </StackPanel>
@@ -330,13 +332,13 @@
                                                 </DockPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="22,0,0,6"
                                                             Visibility="{Binding Summary.ShowChanges, Converter={StaticResource BoolToVisibility}}">
-                                                    <TextBlock Text="removed" Foreground="#B91C1C" Background="#FDECEC" TextDecorations="Strikethrough" Padding="4,0" FontSize="12"/>
-                                                    <TextBlock Text="put in" Foreground="#15803D" Background="#E7F5EC" FontWeight="SemiBold" Padding="4,0" Margin="8,0,0,0" FontSize="12"/>
+                                                    <TextBlock Text="removed" Foreground="{DynamicResource ErrorText}" Background="{DynamicResource ErrorWash}" TextDecorations="Strikethrough" Padding="4,0" FontSize="12"/>
+                                                    <TextBlock Text="put in" Foreground="{DynamicResource SuccessText}" Background="{DynamicResource SuccessWash}" FontWeight="SemiBold" Padding="4,0" Margin="8,0,0,0" FontSize="12"/>
                                                     <TextBlock Text="unchanged" Style="{StaticResource Hint}" Padding="4,0" Margin="8,0,0,0" FontSize="12"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Summary.Note}" Style="{StaticResource Hint}" FontSize="12" Margin="0,0,0,8"/>
 
-                                                <Border Background="#FEF3C7" BorderBrush="#D97706" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,8">
+                                                <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,8">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Visibility" Value="Visible"/>
@@ -347,7 +349,7 @@
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
-                                                    <TextBlock Text="{Binding Summary.Warning}" TextWrapping="Wrap" Foreground="#1F2937"/>
+                                                    <TextBlock Text="{Binding Summary.Warning}" TextWrapping="Wrap" Foreground="{DynamicResource TextStrong}"/>
                                                 </Border>
 
                                                 <TextBlock Text="{Binding Summary.Message}" Margin="0,4,0,8">
@@ -369,7 +371,7 @@
                                                             <Border>
                                                                 <Border.Style>
                                                                     <Style TargetType="Border">
-                                                                        <Setter Property="BorderBrush" Value="#FFDCDCDC"/>
+                                                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
                                                                         <Setter Property="BorderThickness" Value="0,1,0,0"/>
                                                                         <Setter Property="Padding" Value="0,14,0,4"/>
                                                                         <Setter Property="Margin" Value="0,10,0,0"/>
@@ -387,19 +389,19 @@
                                                                     <TextBlock Text="{Binding StatusLine}" Style="{StaticResource Hint}" FontSize="12"/>
                                                                     <TextBlock Text="{Binding SourceText}" Style="{StaticResource Hint}" FontSize="12"/>
 
-                                                                    <TextBlock Text="{Binding Problem}" Foreground="#B45309" TextWrapping="Wrap" Margin="0,8,0,0"
+                                                                    <TextBlock Text="{Binding Problem}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,8,0,0"
                                                                                Visibility="{Binding HasProblem, Converter={StaticResource BoolToVisibility}}"/>
 
                                                                     <StackPanel Visibility="{Binding Available, Converter={StaticResource BoolToVisibility}}">
                                                                         <TextBlock Text="Airport conditions" FontWeight="SemiBold" Margin="0,10,0,4"/>
-                                                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="10,8">
+                                                                        <Border Background="{DynamicResource CodeBackground}" BorderBrush="{DynamicResource CodeBorder}" BorderThickness="1" CornerRadius="4" Padding="10,8">
                                                                             <ctl:DiffTextBlock Segments="{Binding ConditionsDiff}" ShowChanges="{Binding ShowChanges}"
-                                                                                               TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="#1F2937"/>
+                                                                                               TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextStrong}"/>
                                                                         </Border>
                                                                         <TextBlock Text="NOTAMs" FontWeight="SemiBold" Margin="0,10,0,4"/>
-                                                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="10,8">
+                                                                        <Border Background="{DynamicResource CodeBackground}" BorderBrush="{DynamicResource CodeBorder}" BorderThickness="1" CornerRadius="4" Padding="10,8">
                                                                             <ctl:DiffTextBlock Segments="{Binding NotamsDiff}" ShowChanges="{Binding ShowChanges}"
-                                                                                               TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="#1F2937"/>
+                                                                                               TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource TextStrong}"/>
                                                                         </Border>
                                                                     </StackPanel>
                                                                 </StackPanel>
@@ -450,16 +452,16 @@
                     <Border x:Name="Bar" Padding="14,9" BorderThickness="0,1,0,0">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="Background" Value="#FDECEC"/>
-                                <Setter Property="BorderBrush" Value="#DC2626"/>
+                                <Setter Property="Background" Value="{DynamicResource ErrorWash}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource ErrorMark}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Kind}" Value="Warning">
-                                        <Setter Property="Background" Value="#FEF3C7"/>
-                                        <Setter Property="BorderBrush" Value="#D97706"/>
+                                        <Setter Property="Background" Value="{DynamicResource WarningWash}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource WarningMark}"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Kind}" Value="Info">
-                                        <Setter Property="Background" Value="#E7F5EC"/>
-                                        <Setter Property="BorderBrush" Value="#16A34A"/>
+                                        <Setter Property="Background" Value="{DynamicResource SuccessWash}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessMark}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -476,21 +478,21 @@
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="&#xE783;"/>
-                                        <Setter Property="Foreground" Value="#B91C1C"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Kind}" Value="Warning">
                                                 <Setter Property="Text" Value="&#xE7BA;"/>
-                                                <Setter Property="Foreground" Value="#B45309"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding Kind}" Value="Info">
                                                 <Setter Property="Text" Value="&#xE73E;"/>
-                                                <Setter Property="Foreground" Value="#15803D"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="#1F2937"/>
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextStrong}"/>
                         </DockPanel>
                     </Border>
                 </DataTemplate>
