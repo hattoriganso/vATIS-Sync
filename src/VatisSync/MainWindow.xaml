@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
 
         <!-- TOP BAR: always visible -->
-        <Border Grid.Row="0" Padding="16,10" BorderThickness="0,0,0,1"
+        <Border Grid.Row="0" Padding="8,10,16,10" BorderThickness="0,0,0,1"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -222,7 +222,7 @@
                             </ListView.View>
                         </ListView>
                         </Border>
-                        <DockPanel Grid.Row="1" Margin="0,14,0,4">
+                        <DockPanel Grid.Row="1" Margin="0,26,0,8">
                             <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearLogCommand}"/>
                             <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
