@@ -301,18 +301,102 @@
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="{DynamicResource ControlBorder}">
                         <Grid>
-                        <ListView ItemsSource="{Binding Stations}" BorderThickness="0">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Header="Station" Width="110" DisplayMemberBinding="{Binding Key}"/>
-                                    <GridViewColumn Header="Connection" Width="120" DisplayMemberBinding="{Binding Connection}"/>
-                                    <GridViewColumn Header="D-ATIS" Width="140" DisplayMemberBinding="{Binding Datis}"/>
-                                    <GridViewColumn Header="Updated" Width="90" DisplayMemberBinding="{Binding LastUpdated}"/>
-                                </GridView>
-                            </ListView.View>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <!-- Column header, left-aligned like the cells under it. The widths here and in the row template must match. -->
+                        <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderSubtle}"
+                                Background="{DynamicResource TabBackground}" Padding="14,7">
+                            <Grid TextElement.FontSize="12" TextElement.FontWeight="SemiBold" TextElement.Foreground="{DynamicResource TextSecondary}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Station"/>
+                                <TextBlock Grid.Column="1" Text="Connection"/>
+                                <TextBlock Grid.Column="2" Text="D-ATIS"/>
+                                <TextBlock Grid.Column="3" Text="Updated"/>
+                            </Grid>
+                        </Border>
+                        <ListView Grid.Row="1" ItemsSource="{Binding Stations}" BorderThickness="0" Background="Transparent"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Your stations">
+                            <ListView.ItemContainerStyle>
+                                <!-- Rows are read-only: no selection, no focus box, just a faint line between them. -->
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Focusable" Value="False"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderSubtle}" Padding="14,5">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:StationRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="170"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Key}" FontWeight="SemiBold" Foreground="{DynamicResource TextStrong}"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <!-- Same dots as the sidebar: filled green when connected, an empty ring when not -->
+                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" StrokeThickness="1.5" VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Stroke" Value="{DynamicResource TextSecondary}"/>
+                                                        <Setter Property="Fill" Value="Transparent"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Connected}" Value="True">
+                                                                <Setter Property="Stroke" Value="{DynamicResource SuccessMark}"/>
+                                                                <Setter Property="Fill" Value="{DynamicResource SuccessMark}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding Connection}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Connected}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Datis}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Datis}" Value="No current D-ATIS">
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="3" Text="{Binding LastUpdated}" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
                         </ListView>
                         <!-- Shown while the list is empty, which is until syncing has started -->
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,28,24,0" IsHitTestVisible="False">
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,0,24,0" IsHitTestVisible="False">
                             <StackPanel.Style>
                                 <Style TargetType="StackPanel">
                                     <Setter Property="Visibility" Value="Collapsed"/>
