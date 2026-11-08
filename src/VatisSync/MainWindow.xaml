@@ -68,7 +68,7 @@
         <TabItem Header="Airports">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Style="{StaticResource Hint}"
-                           Text="Airports to connect when you press Start. Leave this empty to follow the position you last used in CRC (tower, ground, delivery or ramp)."/>
+                           Text="Airports to connect when you press Start. Leave this empty to follow the position you last used in CRC (tower, ground, delivery or ramp), or else to connect the D-ATIS stations found in your open vATIS profile (see Settings). Text is always kept up to date for every D-ATIS station in the profile."/>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,12,0,8">
                     <TextBox Width="110" MaxLength="4" Text="{Binding NewAirport, UpdateSourceTrigger=PropertyChanged}"
                              CharacterCasing="Upper" VerticalContentAlignment="Center"
@@ -173,6 +173,8 @@
                     </StackPanel>
                     <CheckBox IsChecked="{Binding AutoConnectActivePosition}" Margin="0,4"
                               Content="Follow the position I last used in CRC when no airports are chosen"/>
+                    <CheckBox IsChecked="{Binding ConnectProfileStations}" Margin="0,4"
+                              Content="Otherwise connect every D-ATIS station in my open vATIS profile (up to the limit)"/>
                     <CheckBox IsChecked="{Binding LaunchVatis}" Margin="0,4"
                               Content="Open vATIS for me if it is not running"/>
 

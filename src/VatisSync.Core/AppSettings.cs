@@ -19,6 +19,9 @@ public sealed record AppSettings
     public List<string> Airports { get; init; } = [];
 
     public bool AutoConnectActivePosition { get; init; } = true;
+
+    /// <summary>With no airports chosen and no CRC position to follow, connect every D-ATIS station in the open vATIS profile.</summary>
+    public bool ConnectProfileStations { get; init; } = true;
     public bool LaunchVatis { get; init; } = true;
 
     /// <summary>When to ask the controller before a change reaches a connected ATIS.</summary>
@@ -64,6 +67,7 @@ public sealed record AppSettings
             MaxConnections = n.MaxConnections,
             Airports = n.Airports,
             AutoConnectActivePosition = n.AutoConnectActivePosition,
+            ConnectProfileStations = n.ConnectProfileStations,
             LaunchVatis = n.LaunchVatis,
             DisabledRules = n.DisabledRules,
             Approval = n.Approval,

@@ -547,7 +547,7 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task Airport_selection_limits_what_is_connected_and_refreshed()
+    public async Task Airport_selection_limits_what_is_connected_but_every_profile_station_is_refreshed()
     {
         var r = new Rig(Rig.Fast() with { Airports = ["ksfo"] });
         r.Vatis.Add("KSFO");
@@ -559,14 +559,62 @@ public class SyncEngineTests
         await r.Engine.StopAsync();
 
         Assert.Equal(["KSFO"], r.Vatis.Connects());
-        // KOAK got the two initial-pass writes, but refreshes only touch connected stations.
-        Assert.Equal(2, r.Vatis.Configures("KOAK").Count);
+        // KOAK is not connected, but it is in the profile, so it is refreshed like the rest.
+        Assert.True(r.Vatis.Configures("KOAK").Count >= 3);
     }
 
     [Fact]
     public async Task Active_tower_position_connects_only_that_airport()
     {
         var r = new Rig(Rig.Fast() with { Airports = [] }, new CrcPosition("OAK", "TWR"));
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK");
+        r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal(["KOAK"], r.Vatis.Connects());
+    }
+
+    [Fact]
+    public async Task With_no_selection_and_no_position_every_datis_station_in_the_profile_is_connected()
+    {
+        var r = new Rig(Rig.Fast() with { Airports = [] });
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK");
+        r.Vatis.Add("KSJC", preset: "Other"); // in the profile but without a D-ATIS preset
+        r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal(["KOAK", "KSFO"], r.Vatis.Connects().Order());
+    }
+
+    [Fact]
+    public async Task Profile_connecting_respects_the_connection_limit_and_what_is_already_connected()
+    {
+        var r = new Rig(Rig.Fast() with { Airports = [], MaxConnections = 2 });
+        r.Vatis.Add("KSFO", status: "Connected"); // already up, counts toward the limit
+        r.Vatis.Add("KOAK");
+        r.Vatis.Add("KSJC");
+        r.Datis.Entries = [Entry("KSFO"), Entry("KOAK"), Entry("KSJC")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        await r.Engine.StopAsync();
+
+        Assert.Equal(["KOAK"], r.Vatis.Connects());
+        Assert.Empty(r.Vatis.Disconnects());
+    }
+
+    [Fact]
+    public async Task A_followed_position_still_beats_connecting_the_whole_profile()
+    {
+        var r = new Rig(Rig.Fast() with { Airports = [] }, new CrcPosition("OAK", "GND"));
         r.Vatis.Add("KSFO");
         r.Vatis.Add("KOAK");
         r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
@@ -594,9 +642,9 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task Non_tower_position_with_no_selection_connects_nothing()
+    public async Task Non_tower_position_with_no_selection_connects_nothing_when_profile_connecting_is_off()
     {
-        var r = new Rig(Rig.Fast() with { Airports = [] }, new CrcPosition("OAK", "APP"));
+        var r = new Rig(Rig.Fast() with { Airports = [], ConnectProfileStations = false }, new CrcPosition("OAK", "APP"));
         r.Vatis.Add("KSFO");
         r.Vatis.Add("KOAK");
         r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
@@ -611,7 +659,7 @@ public class SyncEngineTests
     [Fact]
     public async Task Position_following_can_be_turned_off()
     {
-        var r = new Rig(Rig.Fast() with { Airports = [], AutoConnectActivePosition = false },
+        var r = new Rig(Rig.Fast() with { Airports = [], AutoConnectActivePosition = false, ConnectProfileStations = false },
             new CrcPosition("OAK", "TWR"));
         r.Vatis.Add("KSFO");
         r.Vatis.Add("KOAK");
@@ -625,9 +673,10 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task With_nothing_to_connect_stations_the_user_already_connected_are_still_refreshed()
+    public async Task With_nothing_to_connect_every_profile_station_is_still_refreshed()
     {
-        var r = new Rig(Rig.Fast() with { Airports = [], Interval = TimeSpan.FromMilliseconds(60) });
+        var r = new Rig(Rig.Fast() with
+            { Airports = [], ConnectProfileStations = false, Interval = TimeSpan.FromMilliseconds(60) });
         r.Vatis.Add("KSFO", status: "Connected"); // user connected it by hand in vATIS
         r.Vatis.Add("KOAK");
         r.Datis.Entries = [Entry("KSFO"), Entry("KOAK")];
@@ -637,7 +686,7 @@ public class SyncEngineTests
         await r.Engine.StopAsync();
 
         Assert.Empty(r.Vatis.Connects());
-        Assert.Equal(2, r.Vatis.Configures("KOAK").Count); // initial writes only; never connected
+        Assert.True(r.Vatis.Configures("KOAK").Count >= 3); // never connected, still kept up to date
     }
 
     [Fact]

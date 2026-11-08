@@ -118,6 +118,7 @@ public sealed partial class MainViewModel : ObservableObject
         IntervalMinutes = _settings.IntervalMinutes;
         MaxConnections = _settings.MaxConnections;
         AutoConnectActivePosition = _settings.AutoConnectActivePosition;
+        ConnectProfileStations = _settings.ConnectProfileStations;
         LaunchVatis = _settings.LaunchVatis;
         Approval = _settings.Approval;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
@@ -158,6 +159,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _intervalMinutes;
     [ObservableProperty] private int _maxConnections;
     [ObservableProperty] private bool _autoConnectActivePosition;
+    [ObservableProperty] private bool _connectProfileStations;
     [ObservableProperty] private bool _launchVatis;
     [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
     [ObservableProperty] private bool _startSyncOnLaunch;
@@ -174,6 +176,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnIntervalMinutesChanged(int value) => Save();
     partial void OnMaxConnectionsChanged(int value) => Save();
     partial void OnAutoConnectActivePositionChanged(bool value) => Save();
+    partial void OnConnectProfileStationsChanged(bool value) => Save();
     partial void OnLaunchVatisChanged(bool value) => Save();
     partial void OnApprovalChanged(ApprovalMode value) => Save();
     partial void OnStartSyncOnLaunchChanged(bool value) => Save();
@@ -209,6 +212,7 @@ public sealed partial class MainViewModel : ObservableObject
         MaxConnections = MaxConnections,
         Airports = [.. Airports],
         AutoConnectActivePosition = AutoConnectActivePosition,
+        ConnectProfileStations = ConnectProfileStations,
         LaunchVatis = LaunchVatis,
         Approval = Approval,
         DisabledRules = Rules.Where(r => !r.Enabled).Select(r => r.Id).ToList(),

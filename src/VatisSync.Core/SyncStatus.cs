@@ -10,12 +10,17 @@ public sealed record SyncOptions
 
     /// <summary>
     /// Airports (ICAO) to connect. Empty means: follow the position last used in CRC if it is a
-    /// TWR/GND/DEL/RMP position (and <see cref="AutoConnectActivePosition"/> is on), otherwise connect nothing.
-    /// Stations already connected in vATIS are refreshed either way.
+    /// TWR/GND/DEL/RMP position (and <see cref="AutoConnectActivePosition"/> is on), otherwise connect every
+    /// D-ATIS station of the open vATIS profile (if <see cref="ConnectProfileStations"/> is on) or nothing.
+    /// Text is written to, and refreshed for, every D-ATIS station of the profile whatever is connected.
     /// </summary>
     public IReadOnlyList<string> Airports { get; init; } = [];
 
     public bool AutoConnectActivePosition { get; init; } = true;
+
+    /// <summary>With no airports chosen and no position to follow, connect the profile's D-ATIS stations (up to <see cref="MaxConnections"/>).</summary>
+    public bool ConnectProfileStations { get; init; } = true;
+
     public bool LaunchVatis { get; init; } = true;
 
     /// <summary>When the controller must approve changes to a connected ATIS.</summary>

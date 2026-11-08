@@ -79,6 +79,7 @@ public class AppSettingsTests : TempDirTests
         {
             IntervalMinutes = 7, Airports = ["KSFO"], DisabledRules = ["x"], LaunchVatis = false,
             AutoConnectActivePosition = false,
+            ConnectProfileStations = false,
         }.ToSyncOptions();
 
         Assert.Equal(TimeSpan.FromMinutes(7), o.Interval);
@@ -86,6 +87,7 @@ public class AppSettingsTests : TempDirTests
         Assert.Equal(["x"], o.DisabledRules);
         Assert.False(o.LaunchVatis);
         Assert.False(o.AutoConnectActivePosition);
+        Assert.False(o.ConnectProfileStations);
     }
 
     [Fact]

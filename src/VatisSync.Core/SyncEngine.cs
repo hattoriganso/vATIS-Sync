@@ -175,11 +175,6 @@ public sealed class SyncEngine(
         foreach (var s in stations)
         {
             var state = await client.GetAtisAsync(s.Id, ct).ConfigureAwait(false);
-            if (connectedOnly && !state.IsConnected)
-            {
-                Record(s.Key, state.IsConnected, null);
-                continue;
-            }
 
             var stationRules = new List<KeyValuePair<string, string>>(builtIn);
             if (rules.TryGetValue(s.Key[..4], out var airportRules)) stationRules.AddRange(airportRules);
@@ -275,12 +270,12 @@ public sealed class SyncEngine(
         {
             candidates = candidates.Where(s => s.Key.Contains(pos.Prefix)).ToList();
         }
-        else
+        else if (!options.ConnectProfileStations)
         {
-            // Nothing selected and no position to follow: connect nothing rather than guess.
-            // (The original script connected the first few available stations.)
+            // Nothing selected, no position to follow, and the user turned profile connecting off.
             candidates = [];
         }
+        // else: every D-ATIS station of the open profile, in the order vATIS lists them, up to the limit.
 
         foreach (var s in candidates)
         {
