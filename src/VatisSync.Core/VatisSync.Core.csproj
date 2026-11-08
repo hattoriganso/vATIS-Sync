@@ -11,5 +11,9 @@
     <EmbeddedResource Include="Rules\builtin-rules.json" />
     <EmbeddedResource Include="Messages\messages.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tomlyn" Version="2.10.2" />
+  </ItemGroup>
 </Project>
 

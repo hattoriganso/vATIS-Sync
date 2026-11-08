@@ -118,6 +118,19 @@
   "rules.read-failed": "Couldn't read your rules file {path}: {reason}",
   "rules.open-failed": "Couldn't open your rules file {path}: {reason}",
 
+  // Small orange text under the status line while syncing, after a setting is changed.
+  "settings.apply-next-start": "Changes apply the next time you press Start.",
+
+  // Yellow bar and Log, about an airport's own settings file in the Airports folder.   {icao}, {path}, {reason}
+  "airports.read-failed": "Couldn't read the settings file for {icao}, so its standard settings are in use. ({path}: {reason})",
+  "airports.save-failed": "Couldn't save the settings for {icao}. ({path}: {reason})",
+
+  // Yellow bar and Log, when the Airports folder itself can't be read.   {path}, {reason}
+  "airports.folder-failed": "Couldn't read the Airports folder. ({path}: {reason})",
+
+  // Log, once, when settings kept by an older version are moved into the Airports folder.   {count}
+  "airports.imported": "Moved the settings of {count} {count?airport|airports} into the Airports folder.",
+
   // Log, when the Windows startup option can't be changed.
   "startup.failed": "Couldn't change the Windows startup setting.",
 

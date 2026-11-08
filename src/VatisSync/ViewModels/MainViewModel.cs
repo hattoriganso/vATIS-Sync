@@ -18,6 +18,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly Func<SyncOptions, SyncEngine> _engineFactory;
     private readonly Action<bool> _applyTray;
     private readonly ProfileDiscovery _discovery;
+    private readonly AirportFileStore _airportFiles;
     private SyncEngine? _engine;
     private AppSettings _settings;
     private bool _loading = true;
@@ -34,9 +35,12 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(Func<SyncOptions, SyncEngine>? engineFactory = null, Action<bool>? applyTray = null,
         IUpdateApprover? approver = null,
         Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null,
-        SettingsStore? store = null)
+        SettingsStore? store = null,
+        AirportFileStore? airportFiles = null)
     {
         _store = store ?? new SettingsStore();
+        _airportFiles = airportFiles ?? new AirportFileStore();
+        _airportFiles.Warning += m => OnUi(() => { AddLog(m); Notify("airports-folder", NoticeKind.Warning, m); });
         _discovery = new ProfileDiscovery(stationsSource ?? EngineFactory.GetProfileStationsAsync);
         _discovery.StateChanged += state => OnUi(() => OnDiscoveryState(state));
         _discovery.AirportsFound += airports => OnUi(() => OnAirportsFound(airports));
@@ -64,10 +68,8 @@ public sealed partial class MainViewModel : ObservableObject
         DefaultRules = new RuleSetEditor(_settings.DisabledRules, Save);
         DefaultFrequencies = new FrequencySetEditor(_settings.Frequencies, Save);
 
-        var listed = _settings.KnownAirports.Concat(_settings.AirportOverrides.Keys).Concat(_settings.Airports)
-            .Distinct().Order(StringComparer.Ordinal);
-        foreach (var icao in listed) InsertAirport(NewAirportPage(icao));
-        _selectedPage = Overview;
+        MigrateLegacyAirportSettings();
+        _selectedPage = Overview; // the airport list starts empty: it is filled only from what vATIS reports
 
         Airports.CollectionChanged += (_, _) =>
         {
@@ -227,7 +229,6 @@ public sealed partial class MainViewModel : ObservableObject
         AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }));
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
         foreach (var page in Airports) page.IsStale = !found.Contains(page.Icao);
-        if (added.Count > 0) Save();
 
         var stale = Airports.Count(a => a.IsStale);
         string? result = null;
@@ -241,9 +242,36 @@ public sealed partial class MainViewModel : ObservableObject
         Notify(Discovery + "-result", NoticeKind.Info, result);
     }
 
-    private AirportViewModel NewAirportPage(string icao) => new(
-        icao, _settings.AirportOverrides.GetValueOrDefault(icao),
-        () => DefaultRules.Disabled, () => DefaultFrequencies.ToDictionary(), Save);
+    private AirportViewModel NewAirportPage(string icao)
+    {
+        AirportViewModel? page = null;
+        page = new AirportViewModel(
+            icao, _airportFiles.Load(icao),
+            () => DefaultRules.Disabled, () => DefaultFrequencies.ToDictionary(),
+            () => SaveAirport(page!));
+        return page;
+    }
+
+    /// <summary>Writes this airport's own settings to its file in the Airports folder.</summary>
+    private void SaveAirport(AirportViewModel page)
+    {
+        if (_loading) return;
+        if (_airportFiles.Save(page.Icao, page.ToSettings()))
+            SettingsNote = IsRunning ? Messages.Get(Msg.SettingsApplyNextStart) : "";
+    }
+
+    /// <summary>
+    /// Older versions kept the airport list and each airport's settings in settings.json. The per-airport settings move into
+    /// the Airports folder (files that already exist are left alone) and both are cleared from settings.json.
+    /// </summary>
+    private void MigrateLegacyAirportSettings()
+    {
+        if (_settings.AirportOverrides.Count == 0 && _settings.KnownAirports.Count == 0) return;
+        var imported = _airportFiles.ImportMissing(_settings.AirportOverrides);
+        if (imported > 0) AddLog(Messages.Get(Msg.AirportsImported, new { count = imported }));
+        _settings = _settings with { AirportOverrides = [], KnownAirports = [] };
+        _store.Save(_settings);
+    }
 
     private void InsertAirport(AirportViewModel page)
     {
@@ -252,14 +280,13 @@ public sealed partial class MainViewModel : ObservableObject
         Airports.Insert(index, page);
     }
 
-    /// <summary>Drops an airport from the list and forgets its own settings. One that is in the profile comes back the next time vATIS is read.</summary>
+    /// <summary>Takes an airport off the list for this session. Its settings file is kept; it comes back when vATIS reports it.</summary>
     [RelayCommand]
     private void RemoveAirport(AirportViewModel? page)
     {
         if (page is null) return;
         if (SelectedPage == page) SelectedPage = Overview;
         Airports.Remove(page);
-        Save();
     }
 
     private static bool IsIcao(string s) => s.Length == 4 && s.All(char.IsLetterOrDigit);
@@ -344,8 +371,6 @@ public sealed partial class MainViewModel : ObservableObject
         Approval = Approval,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),
-        KnownAirports = Airports.Select(a => a.Icao).ToList(),
-        AirportOverrides = Airports.ToDictionary(a => a.Icao, a => a.ToSettings()),
         StartSyncOnLaunch = StartSyncOnLaunch,
         StartWithWindows = StartWithWindows,
         StartMinimized = StartMinimized,
@@ -358,7 +383,7 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = Current.Normalized();
         _store.Save(_settings);
         _applyTray(CloseToTray);
-        SettingsNote = IsRunning ? "Changes apply the next time you press Start." : "";
+        SettingsNote = IsRunning ? Messages.Get(Msg.SettingsApplyNextStart) : "";
     }
 
     // ---- connect list ----
@@ -398,12 +423,20 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var engine = _engineFactory(_settings.ToSyncOptions());
+        var engine = _engineFactory(OptionsForEngine());
         engine.StatusChanged += (_, s) => OnUi(() => ApplyStatus(s));
         engine.Log += m => OnUi(() => AddLog(m));
         _engine = engine;
         engine.Start();
         SettingsNote = "";
+    }
+
+    /// <summary>The general settings plus every airport's own settings from the Airports folder (listed or not).</summary>
+    private SyncOptions OptionsForEngine()
+    {
+        var options = _settings.ToSyncOptions();
+        var perAirport = _airportFiles.LoadAll().ToDictionary(kv => kv.Key, kv => kv.Value.Resolve(_settings));
+        return options with { PerAirport = perAirport };
     }
 
     public async Task StopAsync()
@@ -441,12 +474,10 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var r in rows) Stations.Add(r);
 
         // Airports found in the open vATIS profile join the list (and are remembered for next time).
-        var added = false;
         foreach (var icao in rows.Select(r => r.Key[..4].ToUpperInvariant()).Distinct())
         {
             if (Airports.Any(a => a.Icao == icao)) continue;
             InsertAirport(NewAirportPage(icao));
-            added = true;
         }
         foreach (var page in Airports)
         {
@@ -454,7 +485,6 @@ public sealed partial class MainViewModel : ObservableObject
             page.UpdateStations(mine);
             if (mine.Count > 0) page.IsStale = false;
         }
-        if (added) Save();
     }
 
     private static (string Headline, string Detail) Describe(SyncStatus s) => s.Phase switch

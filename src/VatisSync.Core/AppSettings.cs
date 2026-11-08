@@ -33,10 +33,16 @@ public sealed record AppSettings
     /// <summary>Default per-position handling of frequencies. Roles not listed are Off. Airports may customize their own.</summary>
     public Dictionary<FrequencyRole, FrequencySetting> Frequencies { get; init; } = [];
 
-    /// <summary>Airports (ICAO) the app has seen in the open vATIS profile or the user added by hand; shown in the airport list.</summary>
+    /// <summary>
+    /// Legacy. Older versions remembered the airport list here; it now comes only from the open vATIS profile. Read once so
+    /// nothing is lost, then cleared.
+    /// </summary>
     public List<string> KnownAirports { get; init; } = [];
 
-    /// <summary>Airports (ICAO) that customize rules and/or frequencies instead of following the defaults.</summary>
+    /// <summary>
+    /// Legacy. Older versions kept each airport's own settings here; they now live one file per airport in the Airports
+    /// folder (<see cref="AirportFileStore"/>) and are moved there on first start, then this is cleared.
+    /// </summary>
     public Dictionary<string, AirportSettings> AirportOverrides { get; init; } = [];
 
     /// <summary>Start syncing as soon as the app opens.</summary>

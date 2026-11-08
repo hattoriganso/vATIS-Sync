@@ -66,6 +66,11 @@ public static class Msg
     public static readonly MessageKey RulesInvalidFile = new("rules.invalid-file", "path");
     public static readonly MessageKey RulesReadFailed = new("rules.read-failed", "path", "reason");
     public static readonly MessageKey RulesOpenFailed = new("rules.open-failed", "path", "reason");
+    public static readonly MessageKey SettingsApplyNextStart = new("settings.apply-next-start");
+    public static readonly MessageKey AirportsReadFailed = new("airports.read-failed", "icao", "path", "reason");
+    public static readonly MessageKey AirportsSaveFailed = new("airports.save-failed", "icao", "path", "reason");
+    public static readonly MessageKey AirportsFolderFailed = new("airports.folder-failed", "path", "reason");
+    public static readonly MessageKey AirportsImported = new("airports.imported", "count");
     public static readonly MessageKey StartupFailed = new("startup.failed");
     public static readonly MessageKey ConnectInvalidAirport = new("connect.invalid-airport", "text");
     public static readonly MessageKey AppUnexpected = new("app.unexpected", "path");
