@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VatisSync.Core;
@@ -40,6 +42,8 @@ public sealed partial class MainViewModel : ObservableObject
         AirportFileStore? airportFiles = null,
         DatisPreviewBuilder? preview = null)
     {
+        Banners = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind != NoticeKind.Info };
+        Toasts = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind == NoticeKind.Info };
         _preview = preview ?? EngineFactory.CreatePreviewBuilder();
         _store = store ?? new SettingsStore();
         _airportFiles = airportFiles ?? new AirportFileStore();
@@ -131,11 +135,20 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>What the bottom bar shows. Errors and warnings stay until dismissed or resolved; confirmations clear themselves.</summary>
     public ObservableCollection<Notice> Notices => _notices.Items;
 
+    /// <summary>Errors and warnings: a banner along the bottom that stays put.</summary>
+    public ICollectionView Banners { get; }
+
+    /// <summary>Confirmations: toasts floating over the content, so the layout never moves.</summary>
+    public ICollectionView Toasts { get; }
+
+    private static readonly TimeSpan FadeTime = TimeSpan.FromMilliseconds(250);
+
     /// <summary>Shows a message in the bar. Confirmations (<see cref="NoticeKind.Info"/>) clear themselves after a few seconds.</summary>
     private void Notify(string key, NoticeKind kind, string message)
     {
         var notice = _notices.Post(key, kind, message);
         if (kind != NoticeKind.Info) return;
+        _ = Task.Delay(InfoLifetime - FadeTime).ContinueWith(_ => OnUi(() => notice.IsFading = true), TaskScheduler.Default);
         _ = Task.Delay(InfoLifetime).ContinueWith(_ => OnUi(() => _notices.Dismiss(notice)), TaskScheduler.Default);
     }
 

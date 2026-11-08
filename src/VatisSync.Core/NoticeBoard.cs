@@ -37,6 +37,20 @@ public sealed class Notice(string key, NoticeKind kind, string message) : INotif
         }
     }
 
+    /// <summary>Set shortly before a self-clearing notice is removed, so the UI can fade it out.</summary>
+    public bool IsFading
+    {
+        get => _isFading;
+        set
+        {
+            if (_isFading == value) return;
+            _isFading = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFading)));
+        }
+    }
+
+    private bool _isFading;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }
 

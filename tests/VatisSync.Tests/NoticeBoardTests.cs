@@ -5,6 +5,20 @@ namespace VatisSync.Tests;
 public class NoticeBoardTests
 {
     [Fact]
+    public void A_notice_tells_the_screen_when_it_starts_fading()
+    {
+        var notice = new NoticeBoard().Post("done", NoticeKind.Info, "Added 1 airport.");
+        var changed = new List<string?>();
+        notice.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        notice.IsFading = true;
+        notice.IsFading = true;
+
+        Assert.True(notice.IsFading);
+        Assert.Equal([nameof(Notice.IsFading)], changed);
+    }
+
+    [Fact]
     public void A_repeated_problem_replaces_the_old_message_in_place()
     {
         var board = new NoticeBoard();

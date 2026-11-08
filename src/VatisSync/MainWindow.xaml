@@ -6,6 +6,79 @@
         xmlns:core="clr-namespace:VatisSync.Core;assembly=VatisSync.Core"
         Title="vATIS-Sync" Width="900" Height="620" MinWidth="720" MinHeight="480"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" FontSize="13">
+    <Window.Resources>
+        <!-- One card for every message. Banners (errors, warnings) and toasts (confirmations) share it. -->
+        <DataTemplate x:Key="NoticeCard" DataType="{x:Type core:Notice}">
+                    <Border x:Name="Bar" Padding="14,9" BorderThickness="1" CornerRadius="6">
+                <Border.LayoutTransform><ScaleTransform x:Name="BarScale" ScaleY="1"/></Border.LayoutTransform>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource ErrorWash}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource ErrorMark}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                        <Setter Property="Background" Value="{DynamicResource WarningWash}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource WarningMark}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Info">
+                                        <Setter Property="Background" Value="{DynamicResource SuccessWash}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessMark}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" MinWidth="28" Padding="6,2" Margin="12,0,0,0" VerticalAlignment="Center"
+                                    Background="Transparent" BorderThickness="0" ToolTip="Dismiss" AutomationProperties.Name="Dismiss message"
+                                    Command="{Binding DataContext.DismissNoticeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}">
+                                <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE711;" FontSize="12"/>
+                            </Button>
+                            <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="&#xE783;"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                                <Setter Property="Text" Value="&#xE7BA;"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="Info">
+                                                <Setter Property="Text" Value="&#xE73E;"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextStrong}"/>
+                        </DockPanel>
+                    </Border>
+            <DataTemplate.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded" SourceName="Bar">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.2"/>
+                            <DoubleAnimation Storyboard.TargetName="BarScale" Storyboard.TargetProperty="ScaleY" From="0" To="1" Duration="0:0:0.2">
+                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <DataTrigger Binding="{Binding IsFading}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="Bar" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.25"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -445,58 +518,20 @@
             </Grid>
         </Grid>
 
-        <!-- MESSAGES: errors and warnings stay until dismissed or fixed; confirmations clear themselves -->
-        <ItemsControl Grid.Row="2" ItemsSource="{Binding Notices}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type core:Notice}">
-                    <Border x:Name="Bar" Padding="14,9" BorderThickness="0,1,0,0">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{DynamicResource ErrorWash}"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource ErrorMark}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Kind}" Value="Warning">
-                                        <Setter Property="Background" Value="{DynamicResource WarningWash}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource WarningMark}"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Kind}" Value="Info">
-                                        <Setter Property="Background" Value="{DynamicResource SuccessWash}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessMark}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" MinWidth="28" Padding="6,2" Margin="12,0,0,0" VerticalAlignment="Center"
-                                    Background="Transparent" BorderThickness="0" ToolTip="Dismiss" AutomationProperties.Name="Dismiss message"
-                                    Command="{Binding DataContext.DismissNoticeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}">
-                                <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE711;" FontSize="12"/>
-                            </Button>
-                            <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0"
-                                       VerticalAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="&#xE783;"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Kind}" Value="Warning">
-                                                <Setter Property="Text" Value="&#xE7BA;"/>
-                                                <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Kind}" Value="Info">
-                                                <Setter Property="Text" Value="&#xE73E;"/>
-                                                <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextStrong}"/>
-                        </DockPanel>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
+        <!-- MESSAGES. Errors and warnings stay until dismissed or fixed: a banner along the bottom, inset like the cards. -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding Banners}" ItemTemplate="{StaticResource NoticeCard}">
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter"><Setter Property="Margin" Value="12,0,12,10"/></Style>
+            </ItemsControl.ItemContainerStyle>
+        </ItemsControl>
+
+        <!-- Confirmations clear themselves: a toast floats over the content, so nothing moves when it comes or goes. -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" ItemTemplate="{StaticResource NoticeCard}"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" MaxWidth="420"
+                      Focusable="False">
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter"><Setter Property="Margin" Value="0,8,0,0"/></Style>
+            </ItemsControl.ItemContainerStyle>
         </ItemsControl>
     </Grid>
 </Window>
