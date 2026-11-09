@@ -128,6 +128,7 @@ public sealed partial class MainViewModel : ObservableObject
     private const string VatisUnreachable = "vatis-unreachable";
     private const string Discovery = "vatis-discovery";
     private const string DiscoveryEmpty = "vatis-discovery-empty";
+    private const string SettingsNoteKey = "settings-apply-next-start";
     private static readonly TimeSpan InfoLifetime = TimeSpan.FromSeconds(6);
 
     private readonly NoticeBoard _notices = new();
@@ -354,6 +355,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _nextSync = "";
     [ObservableProperty] private string _startStopText = "Start";
     [ObservableProperty] private string _settingsNote = "";
+
+    /// <summary>The "applies next time you press Start" note also shows as a banner, so the header never grows and moves the page.</summary>
+    partial void OnSettingsNoteChanged(string value)
+    {
+        if (value.Length == 0) _notices.Resolve(SettingsNoteKey);
+        else Notify(SettingsNoteKey, NoticeKind.Warning, value);
+    }
 
     public ObservableCollection<StationRow> Stations { get; } = [];
     public ObservableCollection<LogLine> LogLines { get; } = [];
