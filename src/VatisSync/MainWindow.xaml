@@ -500,11 +500,12 @@
                                     <TabItem Header="Summary" Padding="14,6">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                                             <StackPanel Margin="16,14,16,16">
-                                                <DockPanel Margin="0,0,0,4">
-                                                    <Button DockPanel.Dock="Right" Content="Update now" Command="{Binding Summary.UpdateNowCommand}"/>
+                                                <!-- The action sits next to the preview it refreshes, not at the far edge -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <Button Content="Update now" Command="{Binding Summary.UpdateNowCommand}" Margin="0,0,16,0"/>
                                                     <CheckBox IsChecked="{Binding Summary.ShowChanges}" VerticalAlignment="Center"
                                                               Content="Show what was changed from the real-world text"/>
-                                                </DockPanel>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="22,0,0,6"
                                                             Visibility="{Binding Summary.ShowChanges, Converter={StaticResource BoolToVisibility}}">
                                                     <TextBlock Text="removed" Foreground="{DynamicResource ErrorText}" Background="{DynamicResource ErrorWash}" TextDecorations="Strikethrough" Padding="4,0" FontSize="12"/>
