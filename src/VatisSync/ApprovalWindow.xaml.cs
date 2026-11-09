@@ -18,10 +18,14 @@ public partial class ApprovalWindow : Window
         MinHeight = Math.Min(MinHeight, SystemParameters.WorkArea.Height - 24);
         MaxHeight = Math.Min(MaxHeight, SystemParameters.WorkArea.Height - 24);
         Title = $"Approve ATIS change - {request.Station}";
+        // The headline says what changed; the line under it adds the detail, and only when there is some to add.
         Headline.Text = request.FlowChanged
-            ? $"{request.Station}: the runway configuration changed"
+            ? $"{request.Station}: runways changed"
             : $"{request.Station}: the ATIS text changed";
-        Summary.Text = request.Summary;
+        Summary.Text = request.FlowChanged
+            ? $"From {request.CurrentFlow.Describe()} to {request.NewFlow.Describe()}."
+            : "";
+        Summary.Visibility = request.FlowChanged ? Visibility.Visible : Visibility.Collapsed;
         StopAskingButton.Content = $"Apply, and stop asking for {request.Station}";
 
         var (oldWords, newWords) = WordDiff.Compare(request.CurrentConditions, request.NewConditions);

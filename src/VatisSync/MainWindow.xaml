@@ -564,7 +564,18 @@
                                                                     </Style>
                                                                 </Border.Style>
                                                                 <StackPanel>
-                                                                    <TextBlock Text="{Binding Key}" FontSize="15" FontWeight="SemiBold"/>
+                                                                    <!-- The page title already names a single station; the name is only shown to tell several apart -->
+                                                                    <TextBlock Text="{Binding Key}" FontSize="15" FontWeight="SemiBold">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="1">
+                                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
                                                                     <TextBlock Text="{Binding StatusLine}" Style="{StaticResource Hint}" FontSize="12"/>
                                                                     <TextBlock Text="{Binding SourceText}" Style="{StaticResource Hint}" FontSize="12"/>
 
