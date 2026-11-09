@@ -15,6 +15,8 @@ public partial class ApprovalWindow : Window
     public ApprovalWindow(ApprovalRequest request)
     {
         InitializeComponent();
+        MinHeight = Math.Min(MinHeight, SystemParameters.WorkArea.Height - 24);
+        MaxHeight = Math.Min(MaxHeight, SystemParameters.WorkArea.Height - 24);
         Title = $"Approve ATIS change - {request.Station}";
         Headline.Text = request.FlowChanged
             ? $"{request.Station}: the runway configuration changed"

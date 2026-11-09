@@ -269,7 +269,10 @@
             <Grid Grid.Column="1" Margin="16,12,16,12">
 
                 <!-- Overview: stations and log -->
-                <DockPanel Visibility="{Binding IsOverviewSelected, Converter={StaticResource BoolToVisibility}}">
+                <!-- The page fills the window; when the window is too short it keeps a minimum height and scrolls instead of crushing the table and log -->
+                <ScrollViewer x:Name="OverviewScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False"
+                              Visibility="{Binding IsOverviewSelected, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel MinHeight="440" Height="{Binding ViewportHeight, ElementName=OverviewScroll}">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                         <TextBlock Text="Overview" FontSize="22" FontWeight="SemiBold"/>
                         <TextBlock Text="All your stations and the activity log" Style="{StaticResource Hint}"/>
@@ -313,9 +316,9 @@
                     <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*" MinHeight="90"/>
+                            <RowDefinition Height="*" MinHeight="64"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*" MinHeight="90"/>
+                            <RowDefinition Height="*" MinHeight="64"/>
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="{DynamicResource ControlBorder}">
                         <Grid>
@@ -328,9 +331,9 @@
                                 Background="{DynamicResource TabBackground}" Padding="14,7">
                             <Grid TextElement.FontSize="12" TextElement.FontWeight="SemiBold" TextElement.Foreground="{DynamicResource TextSecondary}">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="125"/>
+                                    <ColumnDefinition Width="145"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Station"/>
@@ -361,9 +364,9 @@
                                 <DataTemplate DataType="{x:Type vm:StationRow}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="120"/>
-                                            <ColumnDefinition Width="150"/>
-                                            <ColumnDefinition Width="170"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="125"/>
+                                            <ColumnDefinition Width="145"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Key}" FontWeight="SemiBold" Foreground="{DynamicResource TextStrong}"/>
@@ -480,6 +483,7 @@
                         </ListBox>
                     </Grid>
                 </DockPanel>
+                </ScrollViewer>
 
                 <!-- One airport -->
                 <ContentControl Content="{Binding SelectedAirport}"

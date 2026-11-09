@@ -9,6 +9,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow(MainViewModel vm)
     {
         InitializeComponent();
+        WindowSizing.FitToScreen(this);
         DataContext = vm;
     }
 

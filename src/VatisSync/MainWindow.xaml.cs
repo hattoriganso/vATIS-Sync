@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
+        WindowSizing.FitToScreen(this);
         DataContext = _vm = vm;
 
         // Keep the newest log line in view. This must not touch the list while the collection is still announcing the
