@@ -152,7 +152,7 @@
                     <!-- A real button, so Tab, Enter and Space reach it. Styled like an airport row (see SidebarTile in App.xaml). -->
                     <Button DockPanel.Dock="Top" Margin="8,10,8,0" Style="{StaticResource SidebarTile}"
                             Command="{Binding ShowOverviewCommand}" AutomationProperties.Name="Overview">
-                        <!-- The icon is centered against both lines (title and status), not just the title -->
+                        <!-- One line: the status already shows in the header, so the tile does not repeat it -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -162,7 +162,6 @@
                                        VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Overview" FontWeight="SemiBold" FontSize="15"/>
-                                <TextBlock Text="{Binding Headline}" FontSize="12" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>
                     </Button>
