@@ -512,7 +512,7 @@
                                                     <TextBlock Text="put in" Foreground="{DynamicResource SuccessText}" Background="{DynamicResource SuccessWash}" FontWeight="SemiBold" Padding="4,0" Margin="8,0,0,0" FontSize="12"/>
                                                     <TextBlock Text="unchanged" Style="{StaticResource Hint}" Padding="4,0" Margin="8,0,0,0" FontSize="12"/>
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding Summary.Note}" Style="{StaticResource Hint}" FontSize="12" Margin="0,0,0,8"/>
+                                                <TextBlock Text="{Binding Summary.Note}" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
 
                                                 <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,8">
                                                     <Border.Style>
