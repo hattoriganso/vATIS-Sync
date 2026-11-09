@@ -274,23 +274,41 @@
                         <TextBlock Text="Overview" FontSize="22" FontWeight="SemiBold"/>
                         <TextBlock Text="All your stations and the activity log" Style="{StaticResource Hint}"/>
                     </StackPanel>
+                    <!-- The two times that matter most on this page: small label over a clear value -->
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                        <TextBlock Text="Last sync: " Style="{StaticResource Hint}"/>
-                        <TextBlock Text="{Binding LastSync}" Margin="0,0,24,0"/>
-                        <TextBlock Text="Next sync: " Style="{StaticResource Hint}"/>
-                        <TextBlock>
-                            <TextBlock.Style>
-                                <!-- A dash while there is no next sync, so the line never has a blank where a time goes -->
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding NextSync}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding NextSync}" Value="">
-                                            <Setter Property="Text" Value="&#x2014;"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Margin="0,0,40,0">
+                            <TextBlock Text="Last sync" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                            <TextBlock Text="{Binding LastSync}" FontSize="15" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextStrong}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding LastSync}" Value="Never">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Next sync" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                            <TextBlock FontSize="15" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <!-- A dash while there is no next sync, so there is never a blank where a time goes -->
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="{Binding NextSync}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextStrong}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding NextSync}" Value="">
+                                                <Setter Property="Text" Value="&#x2014;"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
                     </StackPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
                     <Grid>
