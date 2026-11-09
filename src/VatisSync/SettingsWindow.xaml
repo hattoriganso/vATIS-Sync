@@ -6,117 +6,161 @@
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         FontFamily="Segoe UI" FontSize="13" Background="{DynamicResource WindowBackground}">
     <DockPanel Margin="16">
-        <Button DockPanel.Dock="Bottom" Content="Close" IsDefault="True" IsCancel="True" HorizontalAlignment="Right"
-                Margin="0,12,0,0" Click="OnClose"/>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="0,0,10,0">
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="Syncing" Style="{StaticResource CardTitle}"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <TextBlock Text="Refresh every" VerticalAlignment="Center"/>
-                    <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding IntervalMinutes}"
-                              AutomationProperties.Name="Refresh interval in minutes">
-                        <ComboBoxItem Content="1" Tag="1"/>
-                        <ComboBoxItem Content="2" Tag="2"/>
-                        <ComboBoxItem Content="5" Tag="5"/>
-                        <ComboBoxItem Content="10" Tag="10"/>
-                        <ComboBoxItem Content="15" Tag="15"/>
-                        <ComboBoxItem Content="30" Tag="30"/>
-                    </ComboBox>
-                    <TextBlock Text="minutes" VerticalAlignment="Center"/>
-                </StackPanel>
-                <CheckBox IsChecked="{Binding LaunchVatis}" Margin="0,4"
-                          Content="Open vATIS for me if it is not running"/>
-                </StackPanel></Border>
-
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="Connecting" Style="{StaticResource CardTitle}"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <TextBlock Text="Connect at most" VerticalAlignment="Center"/>
-                    <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding MaxConnections}"
-                              AutomationProperties.Name="Maximum ATIS connections">
-                        <ComboBoxItem Content="1" Tag="1"/>
-                        <ComboBoxItem Content="2" Tag="2"/>
-                        <ComboBoxItem Content="3" Tag="3"/>
-                        <ComboBoxItem Content="4" Tag="4"/>
-                    </ComboBox>
-                    <TextBlock Text="stations at once" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4"
-                           Text="Which stations to connect, in this order: the airports listed below; otherwise your last CRC position; otherwise every D-ATIS station in your open vATIS profile."/>
-                <CheckBox IsChecked="{Binding AutoConnectActivePosition}" Margin="0,4"
-                          Content="Follow the position I last used in CRC when no airports are listed"/>
-                <CheckBox IsChecked="{Binding ConnectProfileStations}" Margin="0,4"
-                          Content="Otherwise connect every D-ATIS station in my open vATIS profile (up to the limit)"/>
-                <TextBlock Text="Connect only these airports (optional)" FontWeight="SemiBold" Margin="0,10,0,4"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <TextBox Width="110" MaxLength="4" Text="{Binding NewConnectAirport, UpdateSourceTrigger=PropertyChanged}"
-                             CharacterCasing="Upper" VerticalContentAlignment="Center"
-                             AutomationProperties.Name="Airport code to connect">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Return" Command="{Binding AddConnectAirportCommand}"/>
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <Button Content="Add" Command="{Binding AddConnectAirportCommand}" Margin="8,0,0,0"/>
-                    <Button Content="Remove selected" Command="{Binding RemoveConnectAirportCommand}" Margin="8,0,0,0">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedConnectAirport}" Value="{x:Null}">
-                                        <Setter Property="IsEnabled" Value="False"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-                <ListBox ItemsSource="{Binding ConnectAirports}" SelectedItem="{Binding SelectedConnectAirport}"
-                         Height="90"/>
-                </StackPanel></Border>
-
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="Changes to a connected ATIS" Style="{StaticResource CardTitle}"/>
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ApprovalChoices}" DisplayMemberPath="Label"
-                          SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
-                          MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
-                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
-                           Text="Before a refresh changes the text of an ATIS you are connected to, you see what would change and decide. The first fill when you press Start never asks."/>
-
-                </StackPanel></Border>
-
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="This app" Style="{StaticResource CardTitle}"/>
-                <CheckBox IsChecked="{Binding StartSyncOnLaunch}" Margin="0,4"
-                          Content="Start syncing as soon as the app opens"/>
-                <CheckBox IsChecked="{Binding StartWithWindows}" Margin="0,4"
-                          Content="Start the app when Windows starts"/>
-                <CheckBox IsChecked="{Binding StartMinimized}" Margin="0,4"
-                          Content="Start minimized to the tray"/>
-                <CheckBox IsChecked="{Binding CloseToTray}" Margin="0,4"
-                          Content="Keep running in the tray when I close the window"/>
-                </StackPanel></Border>
-
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="Default rules for all airports" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
-                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
-                           Text="Every airport follows these unless you untick &quot;Use the default settings&quot; on its page. Rules clean real-world text that does not make sense on VATSIM."/>
-                <ItemsControl ItemsSource="{Binding DefaultRules.Rules}"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                    <Button Content="Open my rules file" Command="{Binding OpenRulesFileCommand}"/>
-                    <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="10,0,0,0"
-                               Text="For rules of your own for a single airport."/>
-                </StackPanel>
-                </StackPanel></Border>
-
-                <Border Style="{StaticResource Card}"><StackPanel>
-                <TextBlock Text="Default frequencies for all airports" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
-                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
-                           Text="Real ATIS tells pilots to contact a position on a frequency, and on VATSIM that controller may not be online. For each position choose to keep the text, remove the instruction, or replace the frequency with one you type. The ATIS and Flight Service frequencies are never changed."/>
-                <ItemsControl ItemsSource="{Binding DefaultFrequencies.Rows}"/>
-                </StackPanel></Border>
-
-                <TextBlock Text="{Binding SettingsNote}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+        <!-- Footer: the one place that says changes are kept, the "applies at next start" warning, and Close -->
+        <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                <TextBlock Text="{Binding SettingsNote}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                <TextBlock Text="Changes are saved automatically." Style="{StaticResource Hint}"/>
             </StackPanel>
-        </ScrollViewer>
+            <Button Grid.Column="1" Content="Close" IsDefault="True" IsCancel="True" Click="OnClose"/>
+        </Grid>
+
+        <TabControl Padding="0">
+            <!-- GENERAL -->
+            <TabItem Header="General" Padding="16,6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20,2,20,20">
+                        <StackPanel Margin="0,16,0,0">
+                            <TextBlock Text="Syncing" Style="{StaticResource CardTitle}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Refresh every" VerticalAlignment="Center"/>
+                                <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding IntervalMinutes}"
+                                          AutomationProperties.Name="Refresh interval in minutes">
+                                    <ComboBoxItem Content="1" Tag="1"/>
+                                    <ComboBoxItem Content="2" Tag="2"/>
+                                    <ComboBoxItem Content="5" Tag="5"/>
+                                    <ComboBoxItem Content="10" Tag="10"/>
+                                    <ComboBoxItem Content="15" Tag="15"/>
+                                    <ComboBoxItem Content="30" Tag="30"/>
+                                </ComboBox>
+                                <TextBlock Text="minutes" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <CheckBox IsChecked="{Binding LaunchVatis}" Margin="0,4"
+                                      Content="Open vATIS for me if it is not running"/>
+                        </StackPanel>
+
+                        <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>
+                        <StackPanel Margin="0,16,0,0">
+                            <TextBlock Text="Changes to a connected ATIS" Style="{StaticResource CardTitle}"/>
+                            <ComboBox ItemsSource="{x:Static vm:MainViewModel.ApprovalChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
+                                      MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                       Text="Before a refresh changes the text of an ATIS you are connected to, you see what would change and decide. The first fill when you press Start never asks."/>
+                        </StackPanel>
+
+                        <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>
+                        <StackPanel Margin="0,16,0,0">
+                            <TextBlock Text="This app" Style="{StaticResource CardTitle}"/>
+                            <CheckBox IsChecked="{Binding StartSyncOnLaunch}" Margin="0,4"
+                                      Content="Start syncing as soon as the app opens"/>
+                            <CheckBox IsChecked="{Binding StartWithWindows}" Margin="0,4"
+                                      Content="Start the app when Windows starts"/>
+                            <CheckBox IsChecked="{Binding StartMinimized}" Margin="0,4"
+                                      Content="Start minimized to the tray"/>
+                            <CheckBox IsChecked="{Binding CloseToTray}" Margin="0,4"
+                                      Content="Keep running in the tray when I close the window"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- CONNECTING -->
+            <TabItem Header="Connecting" Padding="16,6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20,16,20,20">
+                        <TextBlock Text="Connecting" Style="{StaticResource CardTitle}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Connect at most" VerticalAlignment="Center"/>
+                            <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding MaxConnections}"
+                                      AutomationProperties.Name="Maximum ATIS connections">
+                                <ComboBoxItem Content="1" Tag="1"/>
+                                <ComboBoxItem Content="2" Tag="2"/>
+                                <ComboBoxItem Content="3" Tag="3"/>
+                                <ComboBoxItem Content="4" Tag="4"/>
+                            </ComboBox>
+                            <TextBlock Text="stations at once" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,14"
+                                   Text="Which stations to connect, in this order: the airports listed below; otherwise your last CRC position; otherwise every D-ATIS station in your open vATIS profile."/>
+
+                        <TextBlock Text="Connect only these airports (optional)" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBox Width="110" MaxLength="4" Text="{Binding NewConnectAirport, UpdateSourceTrigger=PropertyChanged}"
+                                     CharacterCasing="Upper" VerticalContentAlignment="Center"
+                                     AutomationProperties.Name="Airport code to connect">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding AddConnectAirportCommand}"/>
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <Button Content="Add" Command="{Binding AddConnectAirportCommand}" Margin="8,0,0,0"/>
+                            <Button Content="Remove selected" Command="{Binding RemoveConnectAirportCommand}" Margin="8,0,0,0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedConnectAirport}" Value="{x:Null}">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                        <Grid>
+                            <ListBox ItemsSource="{Binding ConnectAirports}" SelectedItem="{Binding SelectedConnectAirport}"
+                                     Height="90" AutomationProperties.Name="Airports to connect"/>
+                            <!-- Shown while the list is empty, so an empty box never looks broken -->
+                            <TextBlock Text="No airports listed. Leave it empty to use the options below."
+                                       TextAlignment="Center" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Margin="16,0" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ConnectAirports.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <TextBlock Text="When no airports are listed" FontWeight="SemiBold" Margin="0,18,0,4"/>
+                        <CheckBox IsChecked="{Binding AutoConnectActivePosition}" Margin="0,4"
+                                  Content="Follow the position I last used in CRC"/>
+                        <CheckBox IsChecked="{Binding ConnectProfileStations}" Margin="0,4"
+                                  Content="Otherwise connect every D-ATIS station in my open vATIS profile (up to the limit)"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- RULES -->
+            <TabItem Header="Rules" Padding="16,6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20,16,20,20">
+                        <TextBlock Text="Default rules for all airports" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
+                                   Text="Every airport follows these unless you untick &quot;Use the default settings&quot; on its page. Rules clean real-world text that does not make sense on VATSIM."/>
+                        <ItemsControl ItemsSource="{Binding DefaultRules.Rules}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button Content="Open my rules file" Command="{Binding OpenRulesFileCommand}"/>
+                            <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                       Text="For rules of your own for a single airport."/>
+                        </StackPanel>
+
+                        <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>
+                        <TextBlock Text="Default frequencies for all airports" Style="{StaticResource CardTitle}" Margin="0,16,0,2"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,10"
+                                   Text="Real ATIS tells pilots to contact a position on a frequency, and on VATSIM that controller may not be online. For each position choose to keep the text, remove the instruction, or replace the frequency with one you type. The ATIS and Flight Service frequencies are never changed."/>
+                        <ItemsControl ItemsSource="{Binding DefaultFrequencies.Rows}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>
