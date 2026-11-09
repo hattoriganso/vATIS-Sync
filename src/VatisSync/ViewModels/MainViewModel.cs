@@ -181,6 +181,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private string _discoveryText = Messages.Get(Msg.DiscoverySearching);
     [ObservableProperty] private string _discoveryButtonText = "Retry now";
+    /// <summary>True once the vATIS profile has been read; the sidebar shows a green dot for it, amber while still looking.</summary>
+    [ObservableProperty] private bool _discoveryFound;
 
     /// <summary>Starts reading the vATIS profile, and keeps trying until vATIS answers. Read-only towards vATIS.</summary>
     public void StartDiscovery() => _discovery.Start();
@@ -197,6 +199,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnDiscoveryState(DiscoveryState state)
     {
+        DiscoveryFound = state.Phase == DiscoveryPhase.Found;
         switch (state.Phase)
         {
             case DiscoveryPhase.Searching:
