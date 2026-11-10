@@ -1,7 +1,10 @@
 ﻿using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
+using VatisSync.Services;
 using VatisSync.ViewModels;
 
 namespace VatisSync;
@@ -19,6 +22,7 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
+        ThemeService.Instance.Attach(this);
         WindowSizing.FitToScreen(this);
         DataContext = _vm = vm;
 
@@ -33,6 +37,19 @@ public partial class MainWindow : Window
                 if (LogList.Items.Count > 0) LogList.ScrollIntoView(LogList.Items[^1]);
             });
         };
+    }
+
+    /// <summary>The quick switch: a small menu of the three choices, with a tick on the current one.</summary>
+    private void OnOpenThemeMenu(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = ThemeButton, Placement = PlacementMode.Bottom };
+        foreach (var choice in MainViewModel.ThemeChoices)
+        {
+            var item = new MenuItem { Header = choice.Label, IsChecked = _vm.Theme == choice.Value };
+            item.Click += (_, _) => _vm.Theme = choice.Value;
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
     }
 
     private void OnOpenSettings(object sender, RoutedEventArgs e) =>

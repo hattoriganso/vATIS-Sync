@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using VatisSync.Core;
+using VatisSync.Services;
 
 namespace VatisSync;
 
@@ -16,6 +17,7 @@ public partial class ApprovalWindow : Window
     public ApprovalWindow(ApprovalRequest request)
     {
         InitializeComponent();
+        ThemeService.Instance.Attach(this);
         MinHeight = Math.Min(MinHeight, SystemParameters.WorkArea.Height - 24);
         MaxHeight = Math.Min(MaxHeight, SystemParameters.WorkArea.Height - 24);
         Title = $"Approve ATIS change - {request.Airport}";

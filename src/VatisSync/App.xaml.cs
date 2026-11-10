@@ -24,15 +24,16 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // UI checks (screenshots with made-up data) host this app's resources and windows, but must never start the real
+        // app: that reads the user's real settings and talks to their real vATIS. They set this variable to stop here.
+        if (Environment.GetEnvironmentVariable("VATISSYNC_NO_STARTUP") == "1") return;
+
         new SafetyNet(this, _errorLog, () => _vm, _activity).Install();
         EngineFactory.Log = _activity;
 
-        // Colors come from a palette file; Windows High Contrast gets its own palette, and switching it on or off applies live.
-        ApplyPalette();
-        SystemParameters.StaticPropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName == nameof(SystemParameters.HighContrast)) Dispatcher.BeginInvoke(ApplyPalette);
-        };
+        // Colors come from a palette file: light, dark, or Windows High Contrast. Until the saved choice is read, follow Windows.
+        ThemeService.Instance.Apply(ThemePreference.System);
 
         _mutex = new Mutex(initiallyOwned: true, InstanceName, out var isFirst);
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
@@ -54,6 +55,14 @@ public partial class App : Application
             approver: approver,
             activityLog: _activity);
         _activity.TraceEnabled = _vm.DetailedLog;
+
+        // The saved light / dark / follow-Windows choice, applied before the first window exists so nothing flashes the wrong colors.
+        ThemeService.Instance.Changed += mode => _vm.ShownTheme = mode;
+        ThemeService.Instance.Apply(_vm.Theme);
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.Theme)) ThemeService.Instance.Apply(_vm.Theme);
+        };
         _window = new MainWindow(_vm);
         CreateTray();
         _window.HiddenToTray += () =>
@@ -66,14 +75,6 @@ public partial class App : Application
         if (!_vm.ShouldStartHidden) _window.Show();
         _vm.StartIfConfigured();
         _vm.StartDiscovery(); // read the airports from the open vATIS profile, retrying until vATIS answers
-    }
-
-    private void ApplyPalette()
-    {
-        // VATISSYNC_FORCE_HC=1 shows the High Contrast palette without switching Windows into High Contrast (for checking it).
-        var highContrast = SystemParameters.HighContrast || Environment.GetEnvironmentVariable("VATISSYNC_FORCE_HC") == "1";
-        var file = highContrast ? "Themes/Palette.HighContrast.xaml" : "Themes/Palette.Light.xaml";
-        Resources.MergedDictionaries[0] = new ResourceDictionary { Source = new Uri(file, UriKind.Relative) };
     }
 
     private void ListenForShowRequests()

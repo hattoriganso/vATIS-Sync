@@ -6,6 +6,8 @@
     <!-- Surfaces -->
     <SolidColorBrush x:Key="Surface" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="WindowBackground" Color="#FFF3F3F3"/>
+    <!-- The main window and the approval window (white; the Settings window uses the grayer WindowBackground) -->
+    <SolidColorBrush x:Key="PageBackground" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="SidebarBackground" Color="{x:Static SystemColors.ControlLightColor}"/>
     <SolidColorBrush x:Key="SidebarBorder" Color="{x:Static SystemColors.ControlDarkColor}"/>
 
