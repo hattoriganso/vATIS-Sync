@@ -40,7 +40,11 @@ The **Overview** tile at the top shows the overall status, your stations and the
 | **Synced** | The real-world D-ATIS text has been written into its vATIS station, but the ATIS is not connected. A station with no real-world data to write does not count. |
 | **Started** | At least one of its stations is connected, so the ATIS is live. |
 | **Desynced** | You disregarded a change, so vATIS differs from the real-world ATIS. Shown in amber in place of Started or Synced until the two agree again (see [Approving changes](approval.md#when-vatis-no-longer-matches)). The airport's page has a **Resync** button for it. |
+| **No D-ATIS** | One of its stations is connected, but there is no current real-world D-ATIS to put in it. Shown in amber in place of Started. |
 | **Stale** | It was in the list, but a later read of the profile did not include it. It stays listed, in amber, for the rest of the session so you notice. Its settings are kept and nothing is synced for it. The minus button hides it from the list; the next time vATIS reports it, it comes back. |
+
+The dot beside each airport is filled when one of its stations is connected and a ring when none is. It is green,
+and turns amber for **Desynced** and **No D-ATIS**: the ATIS is live, but it is not what the real world says.
 
 An empty profile (no station with a D-ATIS preset) marks every listed airport stale and shows a warning.
 

@@ -85,7 +85,8 @@ So:
 Disregarding a change means vATIS now differs from the real-world ATIS, and you should never be unaware of that.
 
 - **Desynced.** The airport's status word in the list (it is shown for the airport, never for one station) turns amber and reads **Desynced**, in place of Started or
-  Synced, for as long as a change you disregarded is still waiting. It goes away by itself when vATIS and the
+  Synced, for as long as a change you disregarded is still waiting. The dot beside it turns amber too, and on the
+  Overview the D-ATIS column of each of its stations reads **Desynced**. It goes away by itself when vATIS and the
   real-world ATIS agree again, when you press **Apply** the next time you are asked, or when you stop the sync.
 - **The Log.** For an airport disregarded for the session, each new change that would have asked is written to the Log
   once, as `KPHX: change not applied, vATIS now differs from the real-world ATIS (...)`, in amber. The same text does
