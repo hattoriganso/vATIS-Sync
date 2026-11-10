@@ -147,31 +147,18 @@ public class ThemeTests : TempDirTests
         Assert.True(failures.Count == 0, "Too little contrast:\n" + string.Join("\n", failures));
     }
 
-    // Pairs in the light palette that were already below the bar before dark mode existed. Listed so that a new
-    // shortfall is caught, and so the list shrinks as they are fixed (a fixed one should be removed from here).
-    private static readonly HashSet<string> KnownLightShortfalls =
-    [
-        "OnFill on Accent",                        // 4.50, right at the line
-        "SuccessText on AccentWash",               // green "Started" on the selected sidebar row
-        "WarningText on AccentWash",               // amber text on the selected sidebar row
-        "ControlBorderStrong on ControlBackground",
-        "SuccessMark on WindowBackground",
-        "WarningMark on WindowBackground",
-        "WarningMark on WarningWash",
-    ];
-
     [Fact]
-    public void The_light_palette_has_no_new_contrast_shortfalls_beyond_the_known_ones()
+    public void The_light_palette_has_enough_contrast_wherever_it_is_used()
     {
         // Light uses a few Windows system colors, which this test cannot read; the pairs involving them are skipped.
         var light = Palette("Palette.Light.xaml");
-        var newOnes = Pairs()
+        var failures = Pairs()
             .Where(p => light[p.Fg].StartsWith('#') && light[p.Bg].StartsWith('#'))
-            .Where(p => Contrast(light[p.Fg], light[p.Bg]) < p.Need)
-            .Select(p => $"{p.Fg} on {p.Bg}")
-            .Where(name => !KnownLightShortfalls.Contains(name))
+            .Select(p => (p.Fg, p.Bg, p.Need, Got: Contrast(light[p.Fg], light[p.Bg])))
+            .Where(p => p.Got < p.Need)
+            .Select(p => $"{p.Fg} on {p.Bg}: {p.Got:0.00} (needs {p.Need})")
             .ToList();
 
-        Assert.True(newOnes.Count == 0, "New contrast shortfalls in the light palette:\n" + string.Join("\n", newOnes));
+        Assert.True(failures.Count == 0, "Too little contrast in the light palette:\n" + string.Join("\n", failures));
     }
 }
