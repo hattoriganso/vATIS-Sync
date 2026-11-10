@@ -110,4 +110,37 @@ public class NoticeBoardTests
         Assert.False(board.Update("vatis", "retrying in 3 seconds"));
         Assert.Empty(board.Items);
     }
+
+    [Fact]
+    public void The_banner_shown_is_an_error_before_a_warning_and_the_newest_of_those()
+    {
+        var board = new NoticeBoard();
+        Assert.Null(board.TopBanner);
+
+        var rules = board.Post("rules", NoticeKind.Warning, "rules file unreadable");
+        var settings = board.Post("settings", NoticeKind.Warning, "settings unreadable");
+        Assert.Same(settings, board.TopBanner); // the newest warning
+
+        var vatis = board.Post("vatis", NoticeKind.Error, "vATIS is not responding");
+        board.Post("airports", NoticeKind.Warning, "airports folder unreadable");
+        Assert.Same(vatis, board.TopBanner); // an error outranks a newer warning
+        Assert.Equal(4, board.Banners.Count());
+
+        // As each is dismissed or resolved, the next comes up.
+        board.Resolve("vatis");
+        Assert.Equal("airports", board.TopBanner!.Key);
+        board.Dismiss(board.TopBanner);
+        Assert.Same(settings, board.TopBanner);
+        board.Dismiss(settings);
+        Assert.Same(rules, board.TopBanner);
+    }
+
+    [Fact]
+    public void A_confirmation_is_never_the_banner()
+    {
+        var board = new NoticeBoard();
+        board.Post("done", NoticeKind.Info, "Added 1 airport");
+        Assert.Null(board.TopBanner);
+        Assert.Empty(board.Banners);
+    }
 }

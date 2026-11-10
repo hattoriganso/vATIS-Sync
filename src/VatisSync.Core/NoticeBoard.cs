@@ -97,6 +97,16 @@ public sealed class NoticeBoard
         return found is not null && Items.Remove(found);
     }
 
+    /// <summary>Errors and warnings: the messages that stay until dismissed or resolved.</summary>
+    public IEnumerable<Notice> Banners => Items.Where(n => n.Kind != NoticeKind.Info);
+
+    /// <summary>
+    /// The one banner to show when there is room for one: an error before a warning, and of those the newest. The
+    /// others wait behind it and come up as it is dismissed or resolved.
+    /// </summary>
+    public Notice? TopBanner =>
+        Banners.LastOrDefault(n => n.Kind == NoticeKind.Error) ?? Banners.LastOrDefault();
+
     /// <summary>The user closed it. False if it was already gone.</summary>
     public bool Dismiss(Notice notice) => Items.Remove(notice);
 }

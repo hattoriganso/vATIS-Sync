@@ -9,7 +9,11 @@ namespace VatisSync.ViewModels;
 /// <param name="Desynced">A change the controller disregarded is still waiting, so vATIS differs from the real world.</param>
 public sealed record StationRow(
     string Key, string Connection, string Datis, string LastUpdated, bool Connected = false, bool Synced = false,
-    bool Desynced = false);
+    bool Desynced = false, bool NoDatis = false)
+{
+    /// <summary>The D-ATIS column says something the controller should notice.</summary>
+    public bool NeedsAttention => Desynced || NoDatis;
+}
 
 public enum AirportStatus
 {
@@ -27,6 +31,9 @@ public enum AirportStatus
 
     /// <summary>The controller disregarded a change, so vATIS differs from the real-world ATIS.</summary>
     Desynced,
+
+    /// <summary>A station is connected, but there is no current real-world D-ATIS to put in it.</summary>
+    NoDatis,
 }
 
 /// <summary>The marker for the pinned first entry of the airport list: overall status and the log.</summary>
@@ -102,16 +109,24 @@ public sealed partial class AirportViewModel : ObservableObject
     private bool _isSynced;
 
     /// <summary>vATIS was read and this airport is not in the profile any more. It stays listed so its settings are not lost.</summary>
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText), nameof(NeedsAttention))]
     private bool _isStale;
 
     /// <summary>A change the controller disregarded is waiting for at least one station.</summary>
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText), nameof(NeedsAttention))]
     private bool _isDesynced;
 
-    /// <summary>Stale outranks everything (nothing is synced for it); then desynced (it must not hide behind Started); then live, then written, then waiting.</summary>
+    /// <summary>A connected station has no current real-world D-ATIS.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText), nameof(NeedsAttention))]
+    private bool _hasNoDatis;
+
+    /// <summary>Its dot in the list is amber, not green: live, but not what the real world says.</summary>
+    public bool NeedsAttention => !IsStale && (IsDesynced || HasNoDatis);
+
+    /// <summary>Stale outranks everything (nothing is synced for it); then desynced and no D-ATIS (they must not hide behind Started); then live, then written, then waiting.</summary>
     public AirportStatus Status => IsStale ? AirportStatus.Stale
         : IsDesynced ? AirportStatus.Desynced
+        : HasNoDatis ? AirportStatus.NoDatis
         : IsConnected ? AirportStatus.Started
         : IsSynced ? AirportStatus.Synced
         : AirportStatus.Ready;
@@ -120,6 +135,7 @@ public sealed partial class AirportViewModel : ObservableObject
     {
         AirportStatus.Stale => Msg.AirportStale,
         AirportStatus.Desynced => Msg.AirportDesynced,
+        AirportStatus.NoDatis => Msg.AirportNoDatis,
         AirportStatus.Started => Msg.AirportStarted,
         AirportStatus.Synced => Msg.AirportSynced,
         _ => Msg.AirportReady,
@@ -164,6 +180,7 @@ public sealed partial class AirportViewModel : ObservableObject
         IsConnected = Stations.Any(s => s.Connected);
         IsSynced = Stations.Any(s => s.Synced);
         IsDesynced = Stations.Any(s => s.Desynced);
+        HasNoDatis = Stations.Any(s => s.NoDatis);
         OnPropertyChanged(nameof(HasNoStations));
     }
 }

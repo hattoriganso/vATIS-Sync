@@ -73,6 +73,9 @@
   // A change you disregarded is still waiting: vATIS differs from the real-world ATIS (shown over Started and Synced).
   "airport.desynced": "Desynced",
 
+  // A station is connected, but there is no current real-world D-ATIS for it (shown over Started).
+  "airport.no-datis": "No D-ATIS",
+
   // ---------------------------------------------------------------------------------------------------------------
   // The Summary tab of an airport: the D-ATIS text and where it comes from
   // ---------------------------------------------------------------------------------------------------------------

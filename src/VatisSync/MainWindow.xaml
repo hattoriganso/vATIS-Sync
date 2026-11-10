@@ -35,6 +35,20 @@
                                     CommandParameter="{Binding}">
                                 <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE711;" FontSize="12"/>
                             </Button>
+                            <!-- "+2 more": other banners wait behind this one. Never on a toast. -->
+                            <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" FontWeight="SemiBold"
+                                       Text="{Binding DataContext.MoreBanners, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextStrong}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="Info">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                             <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0"
                                        VerticalAlignment="Center">
                                 <TextBlock.Style>
@@ -218,15 +232,27 @@
                                             <MenuItem Header="Hide from this list (its settings are kept)" Click="OnRemoveAirport"/>
                                         </ContextMenu>
                                     </DockPanel.ContextMenu>
+                                    <!-- Filled when connected, a ring when not. Amber when the airport needs a look (desynced, or live with no D-ATIS). -->
                                     <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
-                                             Stroke="{DynamicResource SuccessMark}" StrokeThickness="1.5">
+                                             StrokeThickness="1.5">
                                         <Ellipse.Style>
                                             <Style TargetType="Ellipse">
+                                                <Setter Property="Stroke" Value="{DynamicResource SuccessMark}"/>
                                                 <Setter Property="Fill" Value="Transparent"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsConnected}" Value="True">
                                                         <Setter Property="Fill" Value="{DynamicResource SuccessMark}"/>
                                                     </DataTrigger>
+                                                    <DataTrigger Binding="{Binding NeedsAttention}" Value="True">
+                                                        <Setter Property="Stroke" Value="{DynamicResource WarningMark}"/>
+                                                    </DataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding NeedsAttention}" Value="True"/>
+                                                            <Condition Binding="{Binding IsConnected}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Fill" Value="{DynamicResource WarningMark}"/>
+                                                    </MultiDataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Ellipse.Style>
@@ -271,6 +297,11 @@
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                                             <Setter Property="ToolTip" Value="You disregarded a change, so vATIS differs from the real-world ATIS."/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="NoDatis">
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="ToolTip" Value="Connected, but there is no current real-world D-ATIS for it."/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -342,12 +373,14 @@
                     </StackPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Your stations" Style="{StaticResource Section}"/>
                     <Grid>
+                        <!-- The table is as tall as its stations (it scrolls past about six), so a short window or a banner
+                             never hides a station while the log still has room; the log takes what is left. -->
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*" MinHeight="64"/>
+                            <RowDefinition Height="Auto" MaxHeight="232"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*" MinHeight="64"/>
                         </Grid.RowDefinitions>
-                        <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="{DynamicResource ControlBorder}">
+                        <Border Grid.Row="0" CornerRadius="4" BorderThickness="1" ClipToBounds="True" BorderBrush="{DynamicResource ControlBorder}" MinHeight="96">
                         <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -431,8 +464,12 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Datis}" Value="No current D-ATIS">
+                                                        <DataTrigger Binding="{Binding NeedsAttention}" Value="True">
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Desynced}" Value="True">
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="ToolTip" Value="You disregarded a change, so vATIS differs from the real-world ATIS. Resync is on the airport's page."/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -444,7 +481,7 @@
                             </ListView.ItemTemplate>
                         </ListView>
                         <!-- Shown while the list is empty, which is until syncing has started -->
-                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,0,24,0" IsHitTestVisible="False">
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,28,24,28" IsHitTestVisible="False">
                             <StackPanel.Style>
                                 <Style TargetType="StackPanel">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -613,11 +650,12 @@
                                                                         <Setter Property="Padding" Value="0,14,0,4"/>
                                                                         <Setter Property="Margin" Value="0,10,0,0"/>
                                                                         <Style.Triggers>
-                                                                            <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                                                                            <!-- The index lives on the item's container, not on this Border -->
+                                                                            <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
                                                                                 <Setter Property="BorderThickness" Value="0"/>
                                                                                 <Setter Property="Padding" Value="0,0,0,4"/>
                                                                                 <Setter Property="Margin" Value="0"/>
-                                                                            </Trigger>
+                                                                            </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>
                                                                 </Border.Style>
@@ -635,9 +673,20 @@
                                                                         </TextBlock.Style>
                                                                     </TextBlock>
                                                                     <TextBlock Text="{Binding StatusLine}" Style="{StaticResource Hint}" FontSize="12"/>
-                                                                    <TextBlock Text="{Binding SourceText}" Style="{StaticResource Hint}" FontSize="12"/>
+                                                                    <!-- Nothing to say about the source when there is no D-ATIS: no blank line in its place -->
+                                                                    <TextBlock Text="{Binding SourceText}" FontSize="12">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                                                                <Style.Triggers>
+                                                                                    <Trigger Property="Text" Value="">
+                                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                    </Trigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
 
-                                                                    <TextBlock Text="{Binding Problem}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                                                    <TextBlock Text="{Binding Problem}" Foreground="{DynamicResource WarningText}" TextWrapping="Wrap" Margin="0,6,0,0"
                                                                                Visibility="{Binding HasProblem, Converter={StaticResource BoolToVisibility}}"/>
 
                                                                     <StackPanel Visibility="{Binding Available, Converter={StaticResource BoolToVisibility}}">
@@ -690,15 +739,25 @@
         </Grid>
 
         <!-- MESSAGES. Errors and warnings stay until dismissed or fixed: a banner along the bottom, inset like the cards. -->
-        <ItemsControl Grid.Row="2" ItemsSource="{Binding Banners}" ItemTemplate="{StaticResource NoticeCard}">
-            <ItemsControl.ItemContainerStyle>
-                <Style TargetType="ContentPresenter"><Setter Property="Margin" Value="12,0,12,10"/></Style>
-            </ItemsControl.ItemContainerStyle>
-        </ItemsControl>
+        <!-- One at a time, the most serious first, so several problems at once do not push the stations and the log out of
+             the window. The card says how many more wait behind it; they come up as it is dismissed or resolved. -->
+        <ContentControl Grid.Row="2" Content="{Binding TopBanner}" ContentTemplate="{StaticResource NoticeCard}"
+                        Margin="12,0,12,10" Focusable="False">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TopBanner}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
 
-        <!-- Confirmations clear themselves: a toast floats over the content, so nothing moves when it comes or goes. -->
+        <!-- Confirmations clear themselves: a toast floats over the content, so nothing moves when it comes or goes.
+             At the top right, beside the page title, where it covers nothing: at the bottom it sat on the newest log lines. -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" ItemTemplate="{StaticResource NoticeCard}"
-                      HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" MaxWidth="420"
+                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,16,0" MaxWidth="420"
                       Focusable="False">
             <ItemsControl.ItemContainerStyle>
                 <Style TargetType="ContentPresenter"><Setter Property="Margin" Value="0,8,0,0"/></Style>

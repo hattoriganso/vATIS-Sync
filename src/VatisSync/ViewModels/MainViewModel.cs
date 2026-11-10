@@ -52,7 +52,11 @@ public sealed partial class MainViewModel : ObservableObject
         ActivityLog? activityLog = null)
     {
         _activityLog = activityLog;
-        Banners = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind != NoticeKind.Info };
+        _notices.Items.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(TopBanner));
+            OnPropertyChanged(nameof(MoreBanners));
+        };
         Toasts = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind == NoticeKind.Info };
         _preview = preview ?? EngineFactory.CreatePreviewBuilder();
         _store = store ?? new SettingsStore();
@@ -148,8 +152,14 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>What the bottom bar shows. Errors and warnings stay until dismissed or resolved; confirmations clear themselves.</summary>
     public ObservableCollection<Notice> Notices => _notices.Items;
 
-    /// <summary>Errors and warnings: a banner along the bottom that stays put.</summary>
-    public ICollectionView Banners { get; }
+    /// <summary>
+    /// Errors and warnings: a banner along the bottom that stays put. One at a time, the most serious first, so that
+    /// several problems at once do not push the stations and the log out of the window.
+    /// </summary>
+    public Notice? TopBanner => _notices.TopBanner;
+
+    /// <summary>"+2 more" when other banners wait behind the one showing; empty otherwise.</summary>
+    public string MoreBanners => _notices.Banners.Count() is > 1 and var n ? $"+{n - 1} more" : "";
 
     /// <summary>Confirmations: toasts floating over the content, so the layout never moves.</summary>
     public ICollectionView Toasts { get; }
@@ -573,11 +583,12 @@ public sealed partial class MainViewModel : ObservableObject
         var rows = s.Stations.Select(st => new StationRow(
             st.Key,
             st.Connected ? "Connected" : "Not connected",
-            !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
+            st.Desynced ? "Desynced" : !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
             st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "",
             Connected: st.Connected,
             Synced: st.LastConfiguredAt is not null && st.DatisAvailable,
-            Desynced: st.Desynced)).ToList();
+            Desynced: st.Desynced,
+            NoDatis: st.Connected && !st.DatisAvailable)).ToList();
 
         // A sync problem stays up until the sync is working again (or stopped), not just until the next retry starts.
         if (s.IsError && s.Message is { } problem) Notify(VatisUnreachable, NoticeKind.Error, problem);

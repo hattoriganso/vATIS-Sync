@@ -54,6 +54,7 @@ public static class Msg
     public static readonly MessageKey AirportStarted = new("airport.started");
     public static readonly MessageKey AirportStale = new("airport.stale");
     public static readonly MessageKey AirportDesynced = new("airport.desynced");
+    public static readonly MessageKey AirportNoDatis = new("airport.no-datis");
 
     // Status line
     public static readonly MessageKey StatusStoppedHeadline = new("status.stopped.headline");
