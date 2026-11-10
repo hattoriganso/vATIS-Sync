@@ -262,7 +262,7 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task Disregard_for_session_silences_the_station_but_never_applies_anything()
+    public async Task Disregard_for_session_never_applies_a_runway_change_and_says_so_in_the_log()
     {
         var approver = new FakeApprover(_ => ApprovalDecision.DisregardForSession);
         var r = ApprovalRig(approver);
@@ -270,12 +270,34 @@ public class SyncEngineTests
 
         r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
         await WaitFor(() => approver.Requests.Count == 1, "the question");
-        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")]; // new text, but the station is muted
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")]; // new text, but the station is disregarded
+        await WaitFor(() => r.Logs.Count(l => l.Contains("change not applied")) == 1, "the log line");
         await Task.Delay(300); // several more refresh cycles at 40 ms
         await r.Engine.StopAsync();
 
         Assert.Single(approver.Requests);
+        Assert.Single(r.Logs, l => l.Contains("change not applied")); // once per new text, not once per refresh
         Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions); // vATIS still has the old flow
+        Assert.True(r.Engine.Status.Stations.Single(s => s.Key.StartsWith("KSFO")).Desynced);
+    }
+
+    [Fact]
+    public async Task Disregard_for_session_still_applies_changes_that_would_not_have_asked()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.DisregardForSession);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE. TWY B CLSD.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE. TWY B CLSD.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+
+        // The real world goes back to the flow vATIS has, with a different taxiway closure: no question would be asked.
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE. TWY D CLSD.")];
+        await WaitForText(r, "TWY D CLSD");
+        await r.Engine.StopAsync();
+
+        Assert.Single(approver.Requests);
+        Assert.False(r.Engine.Status.Stations.Single(s => s.Key.StartsWith("KSFO")).Desynced);
     }
 
     [Fact]

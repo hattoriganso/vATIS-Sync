@@ -70,6 +70,9 @@
   // No longer in the vATIS profile (its settings are kept).
   "airport.stale": "Stale",
 
+  // A change you disregarded is still waiting: vATIS differs from the real-world ATIS (shown over Started and Synced).
+  "airport.desynced": "Desynced",
+
   // ---------------------------------------------------------------------------------------------------------------
   // The Summary tab of an airport: the D-ATIS text and where it comes from
   // ---------------------------------------------------------------------------------------------------------------
@@ -159,6 +162,9 @@
   // Log, after you decide.   {station}, {summary} what would have changed
   "engine.approval-kept": "{station}: kept the current ATIS ({summary})",
   "engine.approval-applied": "{station}: update approved ({summary})",
+
+  // Log, a station disregarded for the session when a change that would have asked arrives.   {station}, {summary}
+  "engine.disregarded-for-session": "{station}: change not applied, vATIS now differs from the real-world ATIS ({summary})",
 
   // Log, when a station is connected or disconnected.   {station}, {limit}
   "engine.connected": "Connected {station}.",

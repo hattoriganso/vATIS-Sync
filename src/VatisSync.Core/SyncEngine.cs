@@ -230,22 +230,42 @@ public sealed class SyncEngine(
     private async Task<bool> ApprovedAsync(string key, VatisAtisState state, FormattedAtis text, CancellationToken ct)
     {
         if (options.Approval == ApprovalMode.Never || approver is null) return true;
-        if (_mutedForSession.Contains(key)) return false;
 
         var current = state.AirportConditions.Trim();
         var updated = text.AirportConditions.Trim();
-        if (current.Length == 0 || current == updated) return true; // nothing live to protect / nothing changes
+        if (current.Length == 0 || current == updated)
+        {
+            _declined.Remove(key); // vATIS and the real world agree again
+            return true; // nothing live to protect / nothing changes
+        }
 
         var flowChanged = FlowAnalyzer.FlowChanged(current, updated);
-        if (options.Approval == ApprovalMode.RunwayChanges && !flowChanged) return true;
+        if (options.Approval == ApprovalMode.RunwayChanges && !flowChanged)
+        {
+            _declined.Remove(key);
+            return true;
+        }
+
+        var fingerprint = updated + "|" + text.Notams.Trim();
+        var request = new ApprovalRequest(key, current, updated, flowChanged,
+            FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated));
+
+        // Disregarded for the session: this is a change that would have asked, so it is not applied, but it is
+        // written to the Log (once per new text) so the controller is never unaware that vATIS has fallen behind.
+        if (_mutedForSession.Contains(key))
+        {
+            if (!_declined.TryGetValue(key, out var noted) || noted != fingerprint)
+            {
+                _declined[key] = fingerprint;
+                Info(Messages.Get(Msg.EngineDisregardedForSession, new { station = key, summary = request.Summary }), LogKind.Warning);
+            }
+            return false;
+        }
 
         // Declined before and the real-world text has not moved since: stay quiet and keep the current text.
-        var fingerprint = updated + "|" + text.Notams.Trim();
         if (_declined.TryGetValue(key, out var seen) && seen == fingerprint) return false;
 
         Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineWaitingApproval, new { station = key }));
-        var request = new ApprovalRequest(key, current, updated, flowChanged,
-            FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated));
         var decision = await approver.RequestAsync(request, ct).ConfigureAwait(false);
 
         switch (decision)
@@ -361,7 +381,11 @@ public sealed class SyncEngine(
         {
             _stations.TryGetValue(key, out var prev);
             _stations[key] = new StationStatus(
-                key, connected, available ?? prev?.DatisAvailable ?? false, configuredAt ?? prev?.LastConfiguredAt);
+                key, connected, available ?? prev?.DatisAvailable ?? false, configuredAt ?? prev?.LastConfiguredAt)
+            {
+                // True only while a disregarded change is pending: it clears itself once vATIS matches the real world again.
+                Desynced = _declined.ContainsKey(key),
+            };
         }
         Publish(_status.Phase, _status.Message, _status.LastSync, _status.NextSync, _status.IsError);
     }

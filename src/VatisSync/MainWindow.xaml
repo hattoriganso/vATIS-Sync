@@ -248,6 +248,11 @@
                                                         <DataTrigger Binding="{Binding Status}" Value="Stale">
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Desynced">
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="ToolTip" Value="You disregarded a change, so vATIS differs from the real-world ATIS."/>
+                                                        </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </TextBlock.Style>

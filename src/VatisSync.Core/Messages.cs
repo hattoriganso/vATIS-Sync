@@ -53,6 +53,7 @@ public static class Msg
     public static readonly MessageKey AirportSynced = new("airport.synced");
     public static readonly MessageKey AirportStarted = new("airport.started");
     public static readonly MessageKey AirportStale = new("airport.stale");
+    public static readonly MessageKey AirportDesynced = new("airport.desynced");
 
     // Status line
     public static readonly MessageKey StatusStoppedHeadline = new("status.stopped.headline");
@@ -81,6 +82,7 @@ public static class Msg
     public static readonly MessageKey EngineWaitingApproval = new("engine.waiting-approval", "station");
     public static readonly MessageKey EngineApprovalKept = new("engine.approval-kept", "station", "summary");
     public static readonly MessageKey EngineApprovalApplied = new("engine.approval-applied", "station", "summary");
+    public static readonly MessageKey EngineDisregardedForSession = new("engine.disregarded-for-session", "station", "summary");
     public static readonly MessageKey EngineConnected = new("engine.connected", "station");
     public static readonly MessageKey EngineDisconnectedLimit = new("engine.disconnected-limit", "station", "limit");
     public static readonly MessageKey EngineKeepingDeletions = new("engine.keeping-deletions", "count", "station");

@@ -6,8 +6,10 @@ namespace VatisSync.ViewModels;
 
 /// <param name="Connected">The station is connected to the network (the ATIS is live).</param>
 /// <param name="Synced">The real-world D-ATIS text has been written into the station.</param>
+/// <param name="Desynced">A change the controller disregarded is still waiting, so vATIS differs from the real world.</param>
 public sealed record StationRow(
-    string Key, string Connection, string Datis, string LastUpdated, bool Connected = false, bool Synced = false);
+    string Key, string Connection, string Datis, string LastUpdated, bool Connected = false, bool Synced = false,
+    bool Desynced = false);
 
 public enum AirportStatus
 {
@@ -22,6 +24,9 @@ public enum AirportStatus
 
     /// <summary>No longer in the vATIS profile.</summary>
     Stale,
+
+    /// <summary>The controller disregarded a change, so vATIS differs from the real-world ATIS.</summary>
+    Desynced,
 }
 
 /// <summary>The marker for the pinned first entry of the airport list: overall status and the log.</summary>
@@ -100,8 +105,13 @@ public sealed partial class AirportViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
     private bool _isStale;
 
-    /// <summary>Stale outranks everything (nothing is synced for it); then live, then written, then waiting.</summary>
+    /// <summary>A change the controller disregarded is waiting for at least one station.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText))]
+    private bool _isDesynced;
+
+    /// <summary>Stale outranks everything (nothing is synced for it); then desynced (it must not hide behind Started); then live, then written, then waiting.</summary>
     public AirportStatus Status => IsStale ? AirportStatus.Stale
+        : IsDesynced ? AirportStatus.Desynced
         : IsConnected ? AirportStatus.Started
         : IsSynced ? AirportStatus.Synced
         : AirportStatus.Ready;
@@ -109,6 +119,7 @@ public sealed partial class AirportViewModel : ObservableObject
     public string StatusText => Messages.Get(Status switch
     {
         AirportStatus.Stale => Msg.AirportStale,
+        AirportStatus.Desynced => Msg.AirportDesynced,
         AirportStatus.Started => Msg.AirportStarted,
         AirportStatus.Synced => Msg.AirportSynced,
         _ => Msg.AirportReady,
@@ -152,6 +163,7 @@ public sealed partial class AirportViewModel : ObservableObject
         Summary.SetEngineRows(list);
         IsConnected = Stations.Any(s => s.Connected);
         IsSynced = Stations.Any(s => s.Synced);
+        IsDesynced = Stations.Any(s => s.Desynced);
         OnPropertyChanged(nameof(HasNoStations));
     }
 }

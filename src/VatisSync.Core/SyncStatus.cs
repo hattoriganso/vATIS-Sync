@@ -59,7 +59,11 @@ public sealed record StationStatus(
     string Key,
     bool Connected,
     bool DatisAvailable,
-    DateTimeOffset? LastConfiguredAt);
+    DateTimeOffset? LastConfiguredAt)
+{
+    /// <summary>A change the controller disregarded is still waiting, so vATIS differs from the real-world ATIS.</summary>
+    public bool Desynced { get; init; }
+}
 
 public sealed record SyncStatus(
     SyncPhase Phase,
