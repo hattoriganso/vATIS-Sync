@@ -296,7 +296,9 @@ public sealed partial class MainViewModel : ObservableObject
         var added = found.Where(icao => Airports.All(a => a.Icao != icao)).ToList();
         var failedBefore = _loggedFailures;
         _loggedFailures = 0;
-        AddLog(Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count, failed = failedBefore }), LogKind.Success);
+        AddLog(failedBefore == 0
+            ? Messages.Get(Msg.DiscoveryRead, new { count = found.Count, @new = added.Count })
+            : Messages.Get(Msg.DiscoveryReadAfterFailures, new { count = found.Count, @new = added.Count, failed = failedBefore }), LogKind.Success);
         foreach (var icao in added) InsertAirport(NewAirportPage(icao));
 
         var stale = Airports.Count(a => a.IsStale);
@@ -631,7 +633,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             if (!File.Exists(path))
-                File.WriteAllText(path, "{\n  // Your own cleanup rules. See the project docs (docs/rules.md) for the format.\n  \"replacements\": {}\n}\n");
+                File.WriteAllText(path, "{\n  // Your own cleanup rules. How to write them: https://github.com/hattoriganso/vATIS-Sync/blob/main/docs/rules.md\n  \"replacements\": {}\n}\n");
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)

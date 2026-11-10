@@ -27,7 +27,7 @@ public partial class ApprovalWindow : Window
         // several, the detail goes above each station's own pair of texts instead.
         Headline.Text = $"{request.Airport}: runways changed";
         var only = request.Changes[0];
-        Summary.Text = several ? "" : $"From {only.CurrentFlow.Describe()} to {only.NewFlow.Describe()}.";
+        Summary.Text = several ? "" : only.CurrentFlow.DescribeChangeTo(only.NewFlow);
         Summary.Visibility = several ? Visibility.Collapsed : Visibility.Visible;
         MuteButton.Content = $"Disregard {request.Airport} for this session";
 
@@ -42,9 +42,7 @@ public partial class ApprovalWindow : Window
         {
             var label = new TextBlock { FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
             label.Inlines.Add(new Run(change.Station + ": "));
-            label.Inlines.Add(new Run(change.FlowChanged
-                ? $"from {change.CurrentFlow.Describe()} to {change.NewFlow.Describe()}"
-                : "the ATIS text changed") { FontWeight = FontWeights.Normal });
+            label.Inlines.Add(new Run(change.Summary) { FontWeight = FontWeights.Normal });
             section.Children.Add(label);
         }
 

@@ -26,7 +26,7 @@
         <StackPanel Grid.Row="2" Margin="0,14,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="MuteButton" Click="Mute_Click" Padding="14,6" Margin="0,0,8,0"
-                        AutomationProperties.Name="Disregard, and do not ask about this station again this session"/>
+                        AutomationProperties.Name="Disregard, and do not ask about this airport again this session"/>
                 <Button Content="Disregard" Click="Disregard_Click" Padding="14,6" Margin="0,0,8,0" IsCancel="True"/>
                 <Button Content="Apply" Click="Apply_Click" Padding="18,6" IsDefault="True" FontWeight="SemiBold"
                         Style="{StaticResource PrimaryButton}"/>

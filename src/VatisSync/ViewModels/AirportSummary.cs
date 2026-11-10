@@ -167,7 +167,7 @@ public sealed partial class AirportSummary : ObservableObject
         var row = _engineRows.FirstOrDefault(r => string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase));
         return row switch
         {
-            { Connected: true } => Messages.Get(Msg.SummaryStatusStarted),
+            { Connected: true } => Messages.Get(Msg.SummaryStatusConnected),
             { Synced: true } => Messages.Get(Msg.SummaryStatusSynced, new { time = row.LastUpdated }),
             _ => Messages.Get(Msg.SummaryStatusReady),
         };

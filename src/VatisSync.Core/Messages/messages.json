@@ -35,8 +35,9 @@
   // The reason given in the line above when vATIS can't be reached at all.
   "discovery.problem": "Couldn't reach vATIS.",
 
-  // Log, every time vATIS is read.   {count} airports found, {new} of them new to the list, {failed} failed tries before this one
-  "discovery.read": "Read your vATIS profile: {count} D-ATIS {count?airport|airports} found, {new} new. Failed tries before this: {failed}.",
+  // Log, every time vATIS is read.   {count} airports found, {new} of them new to the list, {failed} failed tries before this one (the second text is used when there were any)
+  "discovery.read": "Read your vATIS profile: {count} D-ATIS {count?airport|airports} found, {new} new.",
+  "discovery.read-after-failures": "Read your vATIS profile: {count} D-ATIS {count?airport|airports} found, {new} new, after {failed} failed {failed?try|tries}.",
 
   // Log, every time vATIS is read, when the profile has stations that the app ignores because they have no preset named
   // exactly D-ATIS (a new, empty station is like this).   {count}, {stations} such as "KJFK, KMIA_D"
@@ -65,15 +66,15 @@
   "airport.synced": "Synced",
 
   // At least one of its stations is connected, so the ATIS is live on VATSIM.
-  "airport.started": "Started",
+  "airport.connected": "Connected",
 
   // No longer in the vATIS profile (its settings are kept).
   "airport.stale": "Stale",
 
-  // A change you disregarded is still waiting: vATIS differs from the real-world ATIS (shown over Started and Synced).
+  // A change you disregarded is still waiting: vATIS differs from the real-world ATIS (shown over Connected and Synced).
   "airport.desynced": "Desynced",
 
-  // A station is connected, but there is no current real-world D-ATIS for it (shown over Started).
+  // A station is connected, but there is no current real-world D-ATIS for it (shown over Connected).
   "airport.no-datis": "No D-ATIS",
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -108,7 +109,7 @@
   "summary.age-hours": "{count} {count?hour|hours} ago",
 
   // Under each station's name on the Summary tab: where it stands in vATIS.   {time} is when the text was written
-  "summary.status-started": "Started: connected to the network.",
+  "summary.status-connected": "Connected: live on the network.",
   "summary.status-synced": "Synced: written into vATIS at {time}, not connected.",
   "summary.status-ready": "Ready: nothing written into vATIS yet.",
 
@@ -163,17 +164,17 @@
   "engine.waiting-approval": "Waiting for your approval ({station})…",
 
   // Log, after you decide.   {station}, {summary} what would have changed
-  "engine.approval-kept": "{station}: kept the current ATIS ({summary})",
-  "engine.approval-applied": "{station}: update approved ({summary})",
+  "engine.approval-kept": "{station}: kept the current ATIS. {summary}",
+  "engine.approval-applied": "{station}: update approved. {summary}",
 
   // Log, when the log folder cannot be opened from the Log panel.   {path}, {reason}
-  "log.folder-open-failed": "Could not open the log folder {path}: {reason}",
+  "log.folder-open-failed": "Couldn't open the log folder {path}: {reason}",
 
   // Log, when you press Resync on an airport you disregarded.   {station} is the airport
   "engine.resync": "{station}: resync requested, checking the real-world ATIS now",
 
   // Log, a station disregarded for the session when a change that would have asked arrives.   {station}, {summary}
-  "engine.disregarded-for-session": "{station}: change not applied, vATIS now differs from the real-world ATIS ({summary})",
+  "engine.disregarded-for-session": "{station}: change not applied, vATIS now differs from the real-world ATIS. {summary}",
 
   // Log, when a station is connected or disconnected.   {station}, {limit}
   "engine.connected": "Connected {station}.",
@@ -187,11 +188,11 @@
   // ---------------------------------------------------------------------------------------------------------------
 
   // Yellow bar and Log.   {path}, {reason}
-  "settings.read-failed": "Couldn't read your settings file, so the standard settings are in use. ({path}: {reason})",
+  "settings.read-failed": "Couldn't read your settings file, so the default settings are in use. ({path}: {reason})",
   "settings.save-failed": "Couldn't save your settings. ({path}: {reason})",
 
   // Yellow bar and Log, about the file of your own rules.   {path}, {reason}
-  "rules.invalid-file": "Your rules file wasn't understood, so it was ignored: {path}. See docs/rules.md for how it should look.",
+  "rules.invalid-file": "Your rules file wasn't understood, so it was ignored: {path}. How it should look: https://github.com/hattoriganso/vATIS-Sync/blob/main/docs/rules.md",
   "rules.read-failed": "Couldn't read your rules file {path}: {reason}",
   "rules.open-failed": "Couldn't open your rules file {path}: {reason}",
 
@@ -199,7 +200,7 @@
   "settings.apply-next-start": "Changes apply the next time you press Start.",
 
   // Yellow bar and Log, about an airport's own settings file in the Airports folder.   {icao}, {path}, {reason}
-  "airports.read-failed": "Couldn't read the settings file for {icao}, so its standard settings are in use. ({path}: {reason})",
+  "airports.read-failed": "Couldn't read the settings file for {icao}, so its default settings are in use. ({path}: {reason})",
   "airports.save-failed": "Couldn't save the settings for {icao}. ({path}: {reason})",
 
   // Yellow bar and Log, when the Airports folder itself can't be read.   {path}, {reason}
@@ -212,7 +213,7 @@
   "startup.failed": "Couldn't change the Windows startup setting.",
 
   // Log, when the text typed in "Connect only these airports" is not an airport code.   {text}
-  "connect.invalid-airport": "'{text}' is not a 4-letter airport code (for example KSFO).",
+  "connect.invalid-airport": "\"{text}\" is not a 4-letter airport code (for example KSFO).",
 
   // Red bar when something unexpected goes wrong in the window. The app keeps running.   {path} is the file with the details
   "app.unexpected": "Something went wrong, but vATIS-Sync kept running. Details were saved to {path}.",

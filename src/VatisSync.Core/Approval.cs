@@ -55,8 +55,9 @@ public sealed record StationChange(
     FlowSignature CurrentFlow,
     FlowSignature NewFlow)
 {
+    /// <summary>"Runways 26 → 8." for a runway change; "The ATIS text changed." for any other.</summary>
     public string Summary => FlowChanged
-        ? $"The runway configuration changed: {CurrentFlow.Describe()} -> {NewFlow.Describe()}."
+        ? CurrentFlow.DescribeChangeTo(NewFlow)
         : "The ATIS text changed.";
 }
 

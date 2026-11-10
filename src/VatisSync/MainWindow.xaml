@@ -259,7 +259,7 @@
                                     </Ellipse>
                                     <Button DockPanel.Dock="Right" MinWidth="22" Padding="3,0" Margin="4,0,0,0" VerticalAlignment="Center"
                                             Background="Transparent" BorderThickness="0" ToolTip="Hide from the list. Its settings are kept."
-                                            AutomationProperties.Name="Remove airport"
+                                            AutomationProperties.Name="Hide airport from the list"
                                             Command="{Binding DataContext.RemoveAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
@@ -283,7 +283,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Started">
+                                                        <DataTrigger Binding="{Binding Status}" Value="Connected">
                                                             <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
                                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                                         </DataTrigger>
@@ -714,7 +714,7 @@
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                                             <StackPanel Margin="16,14,16,16">
                                                 <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,14"
-                                                           Text="Each airport follows the defaults chosen under Settings (the gear). Untick 'Use the default settings' to set an airport's own."/>
+                                                           Text="Each airport follows the defaults chosen under Settings (the gear). Untick &quot;Use the default settings&quot; to set an airport's own."/>
                                                 <TextBlock Text="Rules" Style="{StaticResource Section}" Margin="0,0,0,6"/>
                                                 <CheckBox IsChecked="{Binding UseDefaultRules}" Content="Use the default settings" Margin="0,0,0,8"/>
                                                 <ItemsControl ItemsSource="{Binding Rules.Rules}"

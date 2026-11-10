@@ -20,6 +20,20 @@ public sealed record FlowSignature(IReadOnlyList<string> Runways, IReadOnlyList<
         ? "no runways or approaches"
         : $"runways {(Runways.Count == 0 ? "none" : string.Join(", ", Runways))}" +
           (Approaches.Count == 0 ? "" : $"; {string.Join(", ", Approaches)}");
+
+    /// <summary>
+    /// What differs between this flow and <paramref name="next"/>, for the controller to read at a glance:
+    /// "Runways 26 → 8. Approaches ILS → RNAV, VISUAL." Only the part that changed is said. Empty when they are the same.
+    /// </summary>
+    public string DescribeChangeTo(FlowSignature next)
+    {
+        var parts = new List<string>();
+        if (!Runways.SequenceEqual(next.Runways)) parts.Add($"Runways {List(Runways)} → {List(next.Runways)}.");
+        if (!Approaches.SequenceEqual(next.Approaches)) parts.Add($"Approaches {List(Approaches)} → {List(next.Approaches)}.");
+        return string.Join(" ", parts);
+    }
+
+    private static string List(IReadOnlyList<string> items) => items.Count == 0 ? "none" : string.Join(", ", items);
 }
 
 /// <summary>

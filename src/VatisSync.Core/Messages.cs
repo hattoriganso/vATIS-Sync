@@ -23,7 +23,8 @@ public static class Msg
     public static readonly MessageKey DiscoveryFound = new("discovery.found");
     public static readonly MessageKey DiscoveryAttemptFailed = new("discovery.attempt-failed", "problem", "attempt", "seconds");
     public static readonly MessageKey DiscoveryProblem = new("discovery.problem");
-    public static readonly MessageKey DiscoveryRead = new("discovery.read", "count", "new", "failed");
+    public static readonly MessageKey DiscoveryRead = new("discovery.read", "count", "new");
+    public static readonly MessageKey DiscoveryReadAfterFailures = new("discovery.read-after-failures", "count", "new", "failed");
     public static readonly MessageKey DiscoveryNoPreset = new("discovery.no-preset", "count", "stations");
     public static readonly MessageKey DiscoveryEmpty = new("discovery.empty");
     public static readonly MessageKey DiscoveryAdded = new("discovery.added", "count");
@@ -42,7 +43,7 @@ public static class Msg
     public static readonly MessageKey SummaryAgeNow = new("summary.age-now");
     public static readonly MessageKey SummaryAgeMinutes = new("summary.age-minutes", "count");
     public static readonly MessageKey SummaryAgeHours = new("summary.age-hours", "count");
-    public static readonly MessageKey SummaryStatusStarted = new("summary.status-started");
+    public static readonly MessageKey SummaryStatusConnected = new("summary.status-connected");
     public static readonly MessageKey SummaryStatusSynced = new("summary.status-synced", "time");
     public static readonly MessageKey SummaryStatusReady = new("summary.status-ready");
     public static readonly MessageKey SummaryNote = new("summary.note");
@@ -51,7 +52,7 @@ public static class Msg
     // The status word under each airport in the list
     public static readonly MessageKey AirportReady = new("airport.ready");
     public static readonly MessageKey AirportSynced = new("airport.synced");
-    public static readonly MessageKey AirportStarted = new("airport.started");
+    public static readonly MessageKey AirportConnected = new("airport.connected");
     public static readonly MessageKey AirportStale = new("airport.stale");
     public static readonly MessageKey AirportDesynced = new("airport.desynced");
     public static readonly MessageKey AirportNoDatis = new("airport.no-datis");

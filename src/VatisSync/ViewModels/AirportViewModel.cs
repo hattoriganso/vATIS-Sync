@@ -24,7 +24,7 @@ public enum AirportStatus
     Synced,
 
     /// <summary>At least one station is connected: the ATIS is live.</summary>
-    Started,
+    Connected,
 
     /// <summary>No longer in the vATIS profile.</summary>
     Stale,
@@ -123,11 +123,11 @@ public sealed partial class AirportViewModel : ObservableObject
     /// <summary>Its dot in the list is amber, not green: live, but not what the real world says.</summary>
     public bool NeedsAttention => !IsStale && (IsDesynced || HasNoDatis);
 
-    /// <summary>Stale outranks everything (nothing is synced for it); then desynced and no D-ATIS (they must not hide behind Started); then live, then written, then waiting.</summary>
+    /// <summary>Stale outranks everything (nothing is synced for it); then desynced and no D-ATIS (they must not hide behind Connected); then live, then written, then waiting.</summary>
     public AirportStatus Status => IsStale ? AirportStatus.Stale
         : IsDesynced ? AirportStatus.Desynced
         : HasNoDatis ? AirportStatus.NoDatis
-        : IsConnected ? AirportStatus.Started
+        : IsConnected ? AirportStatus.Connected
         : IsSynced ? AirportStatus.Synced
         : AirportStatus.Ready;
 
@@ -136,7 +136,7 @@ public sealed partial class AirportViewModel : ObservableObject
         AirportStatus.Stale => Msg.AirportStale,
         AirportStatus.Desynced => Msg.AirportDesynced,
         AirportStatus.NoDatis => Msg.AirportNoDatis,
-        AirportStatus.Started => Msg.AirportStarted,
+        AirportStatus.Connected => Msg.AirportConnected,
         AirportStatus.Synced => Msg.AirportSynced,
         _ => Msg.AirportReady,
     });

@@ -51,7 +51,7 @@
                                       SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
                                       MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
-                                       Text="When a refresh would change the runways or approaches of an ATIS you are connected to, you see what would change and decide. Nothing else asks. The first fill when you press Start never asks."/>
+                                       Text="When a refresh would change the runways or approaches of an ATIS you are connected to, you see what would change and decide. You are not asked about anything else, and the first fill after you press Start never asks."/>
                         </StackPanel>
 
                         <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>
@@ -170,7 +170,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                             <Button Content="Open my rules file" Command="{Binding OpenRulesFileCommand}"/>
                             <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="10,0,0,0"
-                                       Text="For rules of your own for a single airport."/>
+                                       Text="Write your own rules for a single airport."/>
                         </StackPanel>
 
                         <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>

@@ -101,4 +101,18 @@ public class FlowAnalyzerTests
         Assert.Equal("runways 28R; ILS", Flow("ILS RWY 28R IN USE.").Describe());
         Assert.Equal("no runways or approaches", FlowSignature.Empty.Describe());
     }
+
+    [Fact]
+    public void Describes_a_change_by_what_changed_only()
+    {
+        var arrow = (char)0x2192;
+        var before = Flow("ILS RWY 26 IN USE.");
+
+        Assert.Equal($"Runways 26 {arrow} 8.", before.DescribeChangeTo(Flow("ILS RWY 8 IN USE.")));
+        Assert.Equal($"Approaches ILS {arrow} RNAV, VISUAL.", before.DescribeChangeTo(Flow("RNAV AND VISUAL APCHS RWY 26 IN USE.")));
+        Assert.Equal($"Runways 26 {arrow} 7L, 7R. Approaches ILS {arrow} VISUAL.",
+            before.DescribeChangeTo(Flow("VISUAL APCH RWYS 7L AND 7R IN USE.")));
+        Assert.Equal($"Runways 26 {arrow} none. Approaches ILS {arrow} none.", before.DescribeChangeTo(FlowSignature.Empty));
+        Assert.Equal("", before.DescribeChangeTo(before));
+    }
 }

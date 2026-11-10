@@ -6,7 +6,7 @@
   "rules": [
     {
       "id": "flight-service-pointers",
-      "name": "Flight service / hazardous weather pointers",
+      "name": "Flight Service / hazardous weather pointers",
       "description": "Removes sentences that send pilots to Flight Service for hazardous weather information, which has no meaning on VATSIM.",
       "patterns": [ "{S}\\b(?:A?FSS|FLIGHT SERVICE|HAZD? WX|HAZARDOUS WX)\\b{S}" ]
     },
@@ -18,8 +18,8 @@
     },
     {
       "id": "tfr-notam-pointers",
-      "name": "TFR notices and 'check NOTAMs' pointers",
-      "description": "Removes 'TFR IN EFFECT' sentences and the 'CHECK NOTAMS' pointer (NOTAMs are not available on VATSIM).",
+      "name": "TFR notices and \"check NOTAMs\" pointers",
+      "description": "Removes \"TFR IN EFFECT\" sentences and the \"CHECK NOTAMS\" pointer (NOTAMs are not available on VATSIM).",
       "patterns": [
         "\\s*\\bCHECK NOTAMS\\b(?: FOR ADNL INFO)?(?=\\.\\.\\.)",
         "{S}\\bTFR IN EFFECT\\b{S}"
