@@ -492,6 +492,13 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsNote = "";
     }
 
+    /// <summary>Takes back a Disregard for an airport: checks the real-world ATIS now and asks about any change again.</summary>
+    [RelayCommand]
+    private void ResyncAirport(AirportViewModel? airport)
+    {
+        if (airport is not null) _engine?.Resync(airport.Icao);
+    }
+
     /// <summary>The general settings plus every airport's own settings from the Airports folder (listed or not).</summary>
     private SyncOptions OptionsForEngine()
     {

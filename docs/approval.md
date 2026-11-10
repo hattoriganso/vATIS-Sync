@@ -9,6 +9,7 @@ changes a connected ATIS, the app can show you exactly what would change and wai
 - [The three choices](#the-three-choices)
 - [One airport, one answer](#one-airport-one-answer)
 - [When vATIS no longer matches](#when-vatis-no-longer-matches)
+- [Resync](#resync)
 - [What counts as a runway change](#what-counts-as-a-runway-change)
 - [What never asks](#what-never-asks)
 
@@ -81,10 +82,21 @@ Disregarding a change means vATIS now differs from the real-world ATIS, and you 
 
 - **Desynced.** The airport's status word in the list (it is shown for the airport, never for one station) turns amber and reads **Desynced**, in place of Started or
   Synced, for as long as a change you disregarded is still waiting. It goes away by itself when vATIS and the
-  real-world ATIS agree again, or when you press **Apply** the next time you are asked.
+  real-world ATIS agree again, when you press **Apply** the next time you are asked, or when you stop the sync.
 - **The Log.** For an airport disregarded for the session, each new change that would have asked is written to the Log
   once, as `KPHX: change not applied, vATIS now differs from the real-world ATIS (...)`, in amber. The same text does
   not repeat on every refresh.
+
+## Resync
+
+On the page of a Desynced airport, an amber banner explains why and offers **Resync**.
+
+- **What it does.** It takes back your Disregard for that airport (including *Disregard for this session*) and checks
+  the real-world ATIS straight away, without waiting for the next refresh.
+- **What you then see.** If a change still needs approval, the question window comes up again with what would change,
+  and you choose **Apply** or **Disregard** as before. Resync never writes anything by itself: a runway change still
+  cannot reach vATIS without you having seen it. If the change no longer needs approval, it is applied like any other.
+- **The Log** says `KPHX: resync requested, checking the real-world ATIS now`.
 
 ## What counts as a runway change
 

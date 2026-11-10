@@ -517,6 +517,18 @@
                             <DockPanel>
                                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
+                                    <!-- A change was disregarded: vATIS differs from the real-world ATIS until the controller resyncs -->
+                                    <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
+                                            Visibility="{Binding IsDesynced, Converter={StaticResource BoolToVisibility}}">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="Resync" Padding="14,4" Margin="12,0,0,0" VerticalAlignment="Center"
+                                                    Command="{Binding DataContext.ResyncAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="Resync this airport with the real-world ATIS"/>
+                                            <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextStrong}"
+                                                       Text="You disregarded a change, so vATIS differs from the real-world ATIS. Resync shows you the change again so you can apply it."/>
+                                        </DockPanel>
+                                    </Border>
                                     <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextStrong}"

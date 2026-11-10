@@ -297,12 +297,13 @@ public class SyncEngineTests
         r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")]; // new text, but the station is disregarded
         await WaitFor(() => r.Logs.Count(l => l.Contains("change not applied")) == 1, "the log line");
         await Task.Delay(300); // several more refresh cycles at 40 ms
+        var desynced = Desynced(r, "KSFO"); // stopping the sync clears it, so read it first
         await r.Engine.StopAsync();
 
         Assert.Single(approver.Requests);
         Assert.Single(r.Logs, l => l.Contains("change not applied")); // once per new text, not once per refresh
         Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions); // vATIS still has the old flow
-        Assert.True(r.Engine.Status.Stations.Single(s => s.Key.StartsWith("KSFO")).Desynced);
+        Assert.True(desynced);
     }
 
     [Fact]
@@ -318,10 +319,10 @@ public class SyncEngineTests
         // The real world goes back to the flow vATIS has, with a different taxiway closure: no question would be asked.
         r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE. TWY D CLSD.")];
         await WaitForText(r, "TWY D CLSD");
+        await WaitFor(() => !Desynced(r, "KSFO"), "in step again"); // the real world is back to vATIS's runways
         await r.Engine.StopAsync();
 
         Assert.Single(approver.Requests);
-        Assert.False(r.Engine.Status.Stations.Single(s => s.Key.StartsWith("KSFO")).Desynced);
     }
 
     [Fact]
@@ -369,6 +370,7 @@ public class SyncEngineTests
         BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 28L. TWY D CLSD.");
         await WaitFor(() => approver.Requests.Count == 1, "the question");
         await Task.Delay(300);
+        var desynced = Desynced(r, "KSFO_D");
         await r.Engine.StopAsync();
 
         var request = Assert.Single(approver.Requests);
@@ -376,7 +378,7 @@ public class SyncEngineTests
         Assert.True(request.Changes[0].FlowChanged);
         Assert.False(request.Changes[1].FlowChanged);
         Assert.Contains("TWY B CLSD", r.Vatis.StateOf("KSFO_D").Conditions); // and the airport is held as a whole
-        Assert.True(Desynced(r, "KSFO_D"));
+        Assert.True(desynced);
     }
 
     [Fact]
@@ -412,6 +414,72 @@ public class SyncEngineTests
         Assert.Single(approver.Requests); // neither station asked again
         Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO_A").Conditions);
         Assert.Contains("RWY 28L", r.Vatis.StateOf("KSFO_D").Conditions);
+    }
+
+    [Fact]
+    public async Task Resync_takes_back_a_disregard_and_asks_again_about_the_same_change()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the first question");
+        await WaitFor(() => Desynced(r, "KSFO"), "desynced");
+
+        approver.Decide = _ => ApprovalDecision.Apply;
+        r.Engine.Resync("ksfo");
+        await WaitFor(() => approver.Requests.Count == 2, "the same change asked again");
+        await WaitForText(r, "RWY 10L");
+        await WaitFor(() => !Desynced(r, "KSFO"), "in step again");
+        await r.Engine.StopAsync();
+
+        Assert.Contains(r.Logs, l => l.Contains("resync requested"));
+    }
+
+    [Fact]
+    public async Task Resync_un_mutes_an_airport_disregarded_for_the_session()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.DisregardForSession);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")];
+        await Task.Delay(300);
+        Assert.Single(approver.Requests); // muted: not asked about the new text
+
+        r.Engine.Resync("KSFO");
+        await WaitFor(() => approver.Requests.Count == 2, "asked again after Resync");
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task Resync_does_not_wait_for_the_next_refresh()
+    {
+        var approver = new FakeApprover();
+        var r = new Rig(Rig.Fast() with { Approval = ApprovalMode.RunwayChanges, Interval = TimeSpan.FromSeconds(30) }, approver: approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")]; // the next scheduled refresh is 30 s away
+        r.Engine.Resync("KSFO");
+        await WaitFor(() => approver.Requests.Count == 1, "the question, well before the 30 s refresh", timeoutMs: 3000);
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task Stopping_the_sync_clears_the_desynced_status()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => Desynced(r, "KSFO"), "desynced");
+        await r.Engine.StopAsync();
+
+        Assert.False(Desynced(r, "KSFO"));
     }
 
     [Fact]

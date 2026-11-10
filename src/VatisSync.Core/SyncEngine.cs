@@ -24,6 +24,8 @@ public sealed class SyncEngine(
     // Per sync session, by airport (an airport's stations are synced together or not at all): text the controller
     // declined (so it is not asked about again) and airports they chose to stop being asked about.
     private readonly Dictionary<string, string> _declined = [];
+    private readonly System.Collections.Concurrent.ConcurrentQueue<string> _resyncs = new();
+    private TaskCompletionSource _wake = NewWake();
     private readonly HashSet<string> _mutedForSession = [];
 
     private SyncStatus _status = SyncStatus.Initial;
@@ -49,6 +51,18 @@ public sealed class SyncEngine(
             _run = Task.Run(() => RunAsync(_cts.Token));
         }
     }
+
+    /// <summary>
+    /// Takes back a Disregard for an airport and checks the real-world ATIS now, without waiting for the next refresh.
+    /// If a change still needs approval the controller is asked again; nothing is applied without Apply.
+    /// </summary>
+    public void Resync(string airport)
+    {
+        _resyncs.Enqueue(airport.ToUpperInvariant());
+        _wake.TrySetResult();
+    }
+
+    private static TaskCompletionSource NewWake() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public async Task StopAsync()
     {
@@ -99,6 +113,7 @@ public sealed class SyncEngine(
         }
         finally
         {
+            ClearPending();
             Publish(SyncPhase.Stopped, null);
         }
     }
@@ -142,7 +157,21 @@ public sealed class SyncEngine(
         while (true)
         {
             Publish(SyncPhase.Idle, null, lastSync, lastSync + options.Interval);
-            await Task.Delay(options.Interval, ct).ConfigureAwait(false);
+
+            // Wait for the next refresh, or for a Resync request, which does not wait. The wake-up is created before
+            // the queue is checked so a request made at any moment is seen by one or the other.
+            var wake = _wake = NewWake();
+            if (_resyncs.IsEmpty)
+            {
+                await Task.WhenAny(Task.Delay(options.Interval, ct), wake.Task).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+            }
+            while (_resyncs.TryDequeue(out var airport))
+            {
+                _mutedForSession.Remove(airport);
+                _declined.Remove(airport);
+                Info(Messages.Get(Msg.EngineResync, new { station = airport }));
+            }
             Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineRefreshing), lastSync);
 
             // After the first interval, treat text the user deleted by hand as "keep deleted".
@@ -405,6 +434,16 @@ public sealed class SyncEngine(
         foreach (var s in await DatisStationsAsync(ct).ConfigureAwait(false))
             list.Add((s, await client.GetAtisAsync(s.Id, ct).ConfigureAwait(false)));
         return list;
+    }
+
+    /// <summary>Nothing disregarded carries over once the sync stops: the next start asks afresh.</summary>
+    private void ClearPending()
+    {
+        _declined.Clear();
+        _mutedForSession.Clear();
+        _resyncs.Clear();
+        lock (_gate)
+            foreach (var key in _stations.Keys.ToList()) _stations[key] = _stations[key] with { Desynced = false };
     }
 
     private void Record(string key, bool connected, bool? available, DateTimeOffset? configuredAt = null)

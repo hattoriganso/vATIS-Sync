@@ -163,6 +163,9 @@
   "engine.approval-kept": "{station}: kept the current ATIS ({summary})",
   "engine.approval-applied": "{station}: update approved ({summary})",
 
+  // Log, when you press Resync on an airport you disregarded.   {station} is the airport
+  "engine.resync": "{station}: resync requested, checking the real-world ATIS now",
+
   // Log, a station disregarded for the session when a change that would have asked arrives.   {station}, {summary}
   "engine.disregarded-for-session": "{station}: change not applied, vATIS now differs from the real-world ATIS ({summary})",
 
