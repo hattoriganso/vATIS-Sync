@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Approve ATIS change" Width="780" SizeToContent="Height" MinWidth="560" MinHeight="300" MaxHeight="760"
         Topmost="True" ShowInTaskbar="True" WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI" FontSize="13">
+        FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource PageBackground}" Foreground="{DynamicResource TextPrimary}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

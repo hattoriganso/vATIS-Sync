@@ -5,7 +5,8 @@
         xmlns:ctl="clr-namespace:VatisSync.Controls"
         xmlns:core="clr-namespace:VatisSync.Core;assembly=VatisSync.Core"
         Title="vATIS-Sync" Width="900" Height="620" MinWidth="720" MinHeight="480"
-        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" FontSize="13">
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" FontSize="13"
+        Background="{DynamicResource PageBackground}" Foreground="{DynamicResource TextPrimary}">
     <Window.Resources>
         <!-- One card for every message. Banners (errors, warnings) and toasts (confirmations) share it. -->
         <DataTemplate x:Key="NoticeCard" DataType="{x:Type core:Notice}">
@@ -94,6 +95,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Button Style="{StaticResource StartStopButton}" Command="{Binding StartStopCommand}"
                         FontSize="15" FontWeight="SemiBold" Padding="22,8" VerticalAlignment="Center"
@@ -119,7 +121,24 @@
                     <TextBlock Text="{Binding Headline}" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}"/>
                 </StackPanel>
-                <Button Grid.Column="2" x:Name="SettingsButton" Click="OnOpenSettings" MinWidth="40" Padding="10,6"
+                <!-- Quick switch for light / dark / follow Windows: the icon shows what is showing now -->
+                <Button Grid.Column="2" x:Name="ThemeButton" Click="OnOpenThemeMenu" MinWidth="40" Padding="10,6" Margin="0,0,8,0"
+                        VerticalAlignment="Center" ToolTip="{Binding ThemeSummary}" ToolTipService.ShowOnDisabled="True"
+                        AutomationProperties.Name="{Binding ThemeSummary}" IsEnabled="{Binding CanChangeTheme}">
+                    <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="&#xE706;"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShownTheme}" Value="Dark">
+                                        <Setter Property="Text" Value="&#xE708;"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+                <Button Grid.Column="3" x:Name="SettingsButton" Click="OnOpenSettings" MinWidth="40" Padding="10,6"
                         VerticalAlignment="Center" ToolTip="Settings" AutomationProperties.Name="Settings">
                     <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE713;" FontSize="18"/>
                 </Button>

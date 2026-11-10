@@ -27,6 +27,9 @@ public sealed record AppSettings
     /// <summary>When to ask the controller before a change reaches a connected ATIS.</summary>
     public ApprovalMode Approval { get; init; } = ApprovalMode.RunwayChanges;
 
+    /// <summary>Light, dark, or follow Windows (the default). Windows High Contrast overrides all three.</summary>
+    public ThemePreference Theme { get; init; } = ThemePreference.System;
+
     /// <summary>Built-in rule ids the user switched off.</summary>
     public List<string> DisabledRules { get; init; } = [];
 

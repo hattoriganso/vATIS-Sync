@@ -4,6 +4,7 @@
          Text sits on Window, selection is Highlight with HighlightText, and every outline is a solid system color. -->
     <SolidColorBrush x:Key="Surface" Color="{x:Static SystemColors.WindowColor}"/>
     <SolidColorBrush x:Key="WindowBackground" Color="{x:Static SystemColors.WindowColor}"/>
+    <SolidColorBrush x:Key="PageBackground" Color="{x:Static SystemColors.WindowColor}"/>
     <SolidColorBrush x:Key="SidebarBackground" Color="{x:Static SystemColors.WindowColor}"/>
     <SolidColorBrush x:Key="SidebarBorder" Color="{x:Static SystemColors.WindowTextColor}"/>
 

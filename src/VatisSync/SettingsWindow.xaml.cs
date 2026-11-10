@@ -1,4 +1,5 @@
 using System.Windows;
+using VatisSync.Services;
 using VatisSync.ViewModels;
 
 namespace VatisSync;
@@ -9,6 +10,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow(MainViewModel vm)
     {
         InitializeComponent();
+        ThemeService.Instance.Attach(this);
         WindowSizing.FitToScreen(this);
         DataContext = vm;
     }

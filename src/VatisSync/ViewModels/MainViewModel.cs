@@ -11,6 +11,7 @@ using VatisSync.Services;
 namespace VatisSync.ViewModels;
 
 public sealed record ApprovalChoice(ApprovalMode Mode, string Label);
+public sealed record ThemeChoice(ThemePreference Value, string Label);
 
 public sealed partial class MainViewModel : ObservableObject
 {
@@ -31,6 +32,13 @@ public sealed partial class MainViewModel : ObservableObject
     [
         new(ApprovalMode.RunwayChanges, "Ask me when the runways change"),
         new(ApprovalMode.Never, "Apply runway changes automatically"),
+    ];
+
+    public static IReadOnlyList<ThemeChoice> ThemeChoices { get; } =
+    [
+        new(ThemePreference.System, "Match Windows"),
+        new(ThemePreference.Light, "Light"),
+        new(ThemePreference.Dark, "Dark"),
     ];
 
     public static IReadOnlyList<FrequencyModeChoice> FrequencyModeChoices => FrequencySetEditor.ModeChoices;
@@ -70,6 +78,7 @@ public sealed partial class MainViewModel : ObservableObject
         LaunchVatis = _settings.LaunchVatis;
         Approval = _settings.Approval;
         DetailedLog = _settings.DetailedLog;
+        Theme = _settings.Theme;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
         CloseToTray = _settings.CloseToTray;
@@ -380,6 +389,23 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _launchVatis;
     [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
     [ObservableProperty] private bool _detailedLog = true;
+
+    /// <summary>What the user chose: light, dark, or follow Windows.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ThemeSummary))]
+    private ThemePreference _theme = ThemePreference.System;
+
+    /// <summary>What is showing now (set by the app as Windows or the choice changes). High Contrast overrides the choice.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ThemeSummary), nameof(CanChangeTheme))]
+    private ThemeMode _shownTheme = ThemeMode.Light;
+
+    /// <summary>The quick switch next to Settings does nothing under Windows High Contrast, so it is disabled there.</summary>
+    public bool CanChangeTheme => ShownTheme != ThemeMode.HighContrast;
+
+    /// <summary>For the quick switch's tooltip and screen reader name.</summary>
+    public string ThemeSummary => ShownTheme == ThemeMode.HighContrast
+        ? "Appearance: Windows High Contrast is on, so the app uses your Windows colors"
+        : $"Appearance: {ThemeChoices.First(c => c.Value == Theme).Label}" +
+          (Theme == ThemePreference.System ? $" (now {(ShownTheme == ThemeMode.Dark ? "dark" : "light")})" : "");
     [ObservableProperty] private bool _startSyncOnLaunch;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
@@ -396,6 +422,8 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnConnectProfileStationsChanged(bool value) => Save();
     partial void OnLaunchVatisChanged(bool value) => Save();
     partial void OnApprovalChanged(ApprovalMode value) => Save();
+
+    partial void OnThemeChanged(ThemePreference value) => Save();
 
     partial void OnDetailedLogChanged(bool value)
     {
@@ -439,6 +467,7 @@ public sealed partial class MainViewModel : ObservableObject
         LaunchVatis = LaunchVatis,
         Approval = Approval,
         DetailedLog = DetailedLog,
+        Theme = Theme,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),
         StartSyncOnLaunch = StartSyncOnLaunch,
