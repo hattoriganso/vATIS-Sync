@@ -25,6 +25,11 @@
                                         <Setter Property="Background" Value="{DynamicResource SuccessWash}"/>
                                         <Setter Property="BorderBrush" Value="{DynamicResource SuccessMark}"/>
                                     </DataTrigger>
+                                    <!-- Worth knowing, not a problem: the app's own blue, not a warning's amber -->
+                                    <DataTrigger Binding="{Binding Kind}" Value="Note">
+                                        <Setter Property="Background" Value="{DynamicResource AccentWash}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
@@ -63,6 +68,10 @@
                                             <DataTrigger Binding="{Binding Kind}" Value="Info">
                                                 <Setter Property="Text" Value="&#xE73E;"/>
                                                 <Setter Property="Foreground" Value="{DynamicResource SuccessText}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="Note">
+                                                <Setter Property="Text" Value="&#xE946;"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentText}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -717,12 +726,13 @@
                                                            Text="Each airport follows the defaults chosen under Settings (the gear). Untick &quot;Use the default settings&quot; to set an airport's own."/>
                                                 <TextBlock Text="Rules" Style="{StaticResource Section}" Margin="0,0,0,6"/>
                                                 <CheckBox IsChecked="{Binding UseDefaultRules}" Content="Use the default settings" Margin="0,0,0,8"/>
-                                                <ItemsControl ItemsSource="{Binding Rules.Rules}"
+                                                <!-- Indented under the checkbox that switches them on, so it reads as its contents -->
+                                                <ItemsControl ItemsSource="{Binding Rules.Rules}" Margin="22,2,0,0"
                                                               Visibility="{Binding CustomRules, Converter={StaticResource BoolToVisibility}}"/>
 
                                                 <TextBlock Text="Frequencies" Style="{StaticResource Section}"/>
                                                 <CheckBox IsChecked="{Binding UseDefaultFrequencies}" Content="Use the default settings" Margin="0,0,0,8"/>
-                                                <StackPanel Visibility="{Binding CustomFrequencies, Converter={StaticResource BoolToVisibility}}">
+                                                <StackPanel Margin="22,2,0,0" Visibility="{Binding CustomFrequencies, Converter={StaticResource BoolToVisibility}}">
                                                     <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8"
                                                                Text="Keep the text, remove the instruction, or replace the frequency with one you type. The ATIS and Flight Service frequencies are never changed."/>
                                                     <ItemsControl ItemsSource="{Binding Frequencies.Rows}"/>

@@ -136,6 +136,19 @@ public class NoticeBoardTests
     }
 
     [Fact]
+    public void A_note_stays_like_a_warning_but_waits_behind_one()
+    {
+        var board = new NoticeBoard();
+        var note = board.Post("apply-next-start", NoticeKind.Note, "Changes apply the next time you press Start.");
+        Assert.Same(note, board.TopBanner);
+
+        var warning = board.Post("rules", NoticeKind.Warning, "rules file unreadable");
+        board.Post("another-note", NoticeKind.Note, "something else worth knowing");
+        Assert.Same(warning, board.TopBanner); // a problem outranks a newer note
+        Assert.Equal(3, board.Banners.Count());
+    }
+
+    [Fact]
     public void A_confirmation_is_never_the_banner()
     {
         var board = new NoticeBoard();

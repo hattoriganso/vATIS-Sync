@@ -11,6 +11,9 @@ public enum NoticeKind
     /// <summary>Something is off but the app carries on.</summary>
     Warning,
 
+    /// <summary>Something worth knowing that is not a problem, such as "changes apply the next time you press Start". Stays like a warning, looks calm.</summary>
+    Note,
+
     /// <summary>A passing confirmation, such as "Added 5 airports". Shown briefly, then cleared by the UI.</summary>
     Info,
 }
@@ -97,15 +100,17 @@ public sealed class NoticeBoard
         return found is not null && Items.Remove(found);
     }
 
-    /// <summary>Errors and warnings: the messages that stay until dismissed or resolved.</summary>
+    /// <summary>Errors, warnings and notes: the messages that stay until dismissed or resolved.</summary>
     public IEnumerable<Notice> Banners => Items.Where(n => n.Kind != NoticeKind.Info);
 
     /// <summary>
-    /// The one banner to show when there is room for one: an error before a warning, and of those the newest. The
+    /// The one banner to show when there is room for one: an error before a warning before a note, and of those the newest. The
     /// others wait behind it and come up as it is dismissed or resolved.
     /// </summary>
     public Notice? TopBanner =>
-        Banners.LastOrDefault(n => n.Kind == NoticeKind.Error) ?? Banners.LastOrDefault();
+        Banners.LastOrDefault(n => n.Kind == NoticeKind.Error)
+        ?? Banners.LastOrDefault(n => n.Kind == NoticeKind.Warning)
+        ?? Banners.LastOrDefault();
 
     /// <summary>The user closed it. False if it was already gone.</summary>
     public bool Dismiss(Notice notice) => Items.Remove(notice);

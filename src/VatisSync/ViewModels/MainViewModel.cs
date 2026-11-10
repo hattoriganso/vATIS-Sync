@@ -386,7 +386,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSettingsNoteChanged(string value)
     {
         if (value.Length == 0) _notices.Resolve(SettingsNoteKey);
-        else Notify(SettingsNoteKey, NoticeKind.Warning, value);
+        else Notify(SettingsNoteKey, NoticeKind.Note, value);
     }
 
     public ObservableCollection<StationRow> Stations { get; } = [];

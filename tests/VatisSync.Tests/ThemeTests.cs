@@ -97,7 +97,7 @@ public class ThemeTests : TempDirTests
         return
         [
             .. Text("TextPrimary", [.. Surfaces, "ControlBackground", "TabBackground", "AccentWash", "AccentWashHover", "AccentWashPressed", "CodeBackground"]),
-            .. Text("TextStrong", "CodeBackground", "SuccessWash", "WarningWash", "ErrorWash", "Surface", "WindowBackground"),
+            .. Text("TextStrong", "CodeBackground", "SuccessWash", "WarningWash", "ErrorWash", "AccentWash", "Surface", "WindowBackground"),
             .. Text("TextSecondary", [.. Surfaces, "ControlBackground", "TabBackground", "AccentWash", "AccentWashHover", "CodeBackground"]),
             .. Text("GlyphBrush", [.. Surfaces, "ControlBackground", "AccentWashHover"]),
             .. Text("OnFill", "Accent", "AccentHover", "AccentDark", "SuccessFill", "DangerFill"),
