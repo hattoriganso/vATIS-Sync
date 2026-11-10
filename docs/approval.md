@@ -107,11 +107,15 @@ On the page of a Desynced airport, an amber banner explains why and offers **Res
 The app reads the Airport Conditions text and picks out the runways in use and the approach types expected (ILS, RNAV,
 visual and so on). Two texts are the same flow when both lists match. Only sentences that describe the flow count:
 runways in use, landing, departing, and expected approaches. A sentence about a closed runway, hold-short
-instructions or a crane does not, so mentioning a closed runway is not taken as a flow change.
+instructions or a crane does not, so mentioning a closed runway is not taken as a flow change. When one sentence
+does both (`LNDG RWY 9, RWY 27 CLSD`), only the part about the closure is left out, so a change to the runway in use
+is still seen.
 
 ## What never asks
 
-- **The first fill after you press Start.** You asked for it by pressing Start.
+- **The first fill after you press Start.** You asked for it by pressing Start. Only that one: if vATIS stops
+  answering and the app has to start over by itself, an ATIS that is still connected is checked like any refresh,
+  and what you disregarded stays disregarded.
 - **An ATIS that is not connected.** Nothing is live, so there is nothing to protect. It is updated freely.
 - **A station with no text in vATIS yet.** There is nothing to compare against. (Its airport's other stations may still ask.)
 - **A change that is not a runway change**, however large: new weather, a closed taxiway, a new NOTAM. Those are
