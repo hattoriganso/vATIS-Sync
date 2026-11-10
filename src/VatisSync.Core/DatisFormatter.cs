@@ -59,6 +59,7 @@ public static class DatisFormatter
                 return FormattedAtis.Unavailable;
         }
 
+        datis = Printable(datis);
         if (datis.Length == 0) return FormattedAtis.Unavailable;
 
         // Strip beginning (first two sentences) and ending ("...ADVS YOU HAVE") D-ATIS text.
@@ -137,6 +138,27 @@ public static class DatisFormatter
         return DateTimeOffset.TryParse(trimmed, CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out result);
     }
+
+    /// <summary>
+    /// The text comes from the internet and ends up on the air, so only what can be read is let through: control
+    /// characters and line breaks become spaces, and invisible formatting characters (such as the ones that reverse
+    /// the direction of text) are dropped.
+    /// </summary>
+    internal static string Printable(string text)
+    {
+        if (!text.Any(NotPrintable)) return text;
+        var sb = new System.Text.StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            if (!NotPrintable(c)) sb.Append(c);
+            else if (char.GetUnicodeCategory(c) != UnicodeCategory.Format) sb.Append(' ');
+        }
+        return sb.ToString();
+    }
+
+    private static bool NotPrintable(char c) => char.GetUnicodeCategory(c) is
+        UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or
+        UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned;
 
     /// <summary>Python-style \1 backreferences -> .NET $1; literal $ is escaped.</summary>
     private static string ToDotNetReplacement(string r) =>

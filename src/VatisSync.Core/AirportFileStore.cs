@@ -12,7 +12,7 @@ namespace VatisSync.Core;
 /// </summary>
 public sealed class AirportFileStore(string? folder = null)
 {
-    private static readonly Regex IcaoPattern = new("^[A-Z0-9]{4}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex IcaoPattern = new(@"^[A-Z0-9]{4}\z",RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public string Folder { get; } = folder ?? DefaultFolder;
 

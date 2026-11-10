@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Check every package for known vulnerabilities on restore, including the ones other packages bring in. -->
+  <PropertyGroup>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+  </PropertyGroup>
+
+</Project>

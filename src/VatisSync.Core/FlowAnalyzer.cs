@@ -25,8 +25,8 @@ public sealed record FlowSignature(IReadOnlyList<string> Runways, IReadOnlyList<
 /// <summary>
 /// Reads the runway configuration out of an Airport Conditions text, so the app can tell when a refresh
 /// would switch the airport's flow. Only sentences that describe the flow count (runways in use, landing,
-/// departing, expected approaches); closures, hold-short instructions and similar sentences are ignored so
-/// that mentioning a closed runway is not mistaken for a flow change.
+/// departing, expected approaches); closures, hold-short instructions and the like are ignored, part of a
+/// sentence by part, so that mentioning a closed runway is not mistaken for a flow change and does not hide one.
 /// </summary>
 public static class FlowAnalyzer
 {
@@ -56,6 +56,13 @@ public static class FlowAnalyzer
     private static readonly Regex ApproachType = new(
         @"\b(?:ILS|RNAV|RNP|LDA|LOC|LOCALIZER|VOR|GPS|NDB|TACAN|VISUAL|VIS)\b", RegexOptions.Compiled);
 
+    // A comma-separated part that carries on a runway list: "RWY 27 CLSD" in "RWY 9, RWY 27 CLSD"...
+    private static readonly Regex StartsWithRunway = new(
+        @"^\s*(?:(?:@?RWYS?|@?RY|RUNWAYS?)\s*)?\d{1,2}[LRC]?\b", RegexOptions.Compiled);
+
+    // ...and one that is only the number, so what it says goes for the whole list: "27 OTS" in "ILS RWY 8R, 9, 27 OTS".
+    private static readonly Regex StartsWithBareRunway = new(@"^\s*\d{1,2}[LRC]?\b", RegexOptions.Compiled);
+
     public static FlowSignature Analyze(string? airportConditions)
     {
         var runways = new SortedSet<string>(StringComparer.Ordinal);
@@ -64,18 +71,88 @@ public static class FlowAnalyzer
         foreach (var raw in Sentence.Split(airportConditions ?? ""))
         {
             var sentence = raw.ToUpperInvariant();
-            if (!FlowWords.IsMatch(sentence) || NotFlowWords.IsMatch(sentence)) continue;
+            if (!FlowWords.IsMatch(sentence)) continue;
+
+            // A closure rules out its own part of the sentence, not the whole of it, so the flow in
+            // "LNDG RWY 9, RWY 27 CLSD" is still read (runway 9) and a change to it is still seen.
+            var parts = Parts(sentence);
+            var notFlow = NotFlowParts(sentence, parts);
+            var mixed = notFlow.Count > 0;
 
             foreach (Match m in RunwayList.Matches(sentence))
-                foreach (Match r in RunwayToken.Matches(m.Groups["list"].Value))
-                    runways.Add(r.Value);
+            {
+                // Beside a closure, a runway counts only where the sentence says it is the flow: the
+                // "RWY 14R CAT TWO" in "ILS RWY 18 OTS, RWY 14R CAT TWO NOT AUTHORIZED" is not.
+                if (mixed && (Within(notFlow, m.Index) || !StatesFlow(sentence, parts, m))) continue;
+
+                var list = m.Groups["list"];
+                foreach (Match r in RunwayToken.Matches(list.Value))
+                    if (!Within(notFlow, list.Index + r.Index)) runways.Add(r.Value);
+            }
 
             foreach (Match m in ApproachType.Matches(sentence))
-                approaches.Add(m.Value switch { "LOCALIZER" => "LOC", "VIS" => "VISUAL", _ => m.Value });
+                if (!Within(notFlow, m.Index))
+                    approaches.Add(m.Value switch { "LOCALIZER" => "LOC", "VIS" => "VISUAL", _ => m.Value });
         }
 
         return new FlowSignature([.. runways], [.. approaches]);
     }
+
+    /// <summary>The comma- or semicolon-separated parts of a sentence, as offsets into it.</summary>
+    private static List<(int Start, int End)> Parts(string sentence)
+    {
+        var parts = new List<(int Start, int End)>();
+        var start = 0;
+        for (var i = 0; i <= sentence.Length; i++)
+        {
+            if (i < sentence.Length && sentence[i] is not (',' or ';')) continue;
+            parts.Add((start, i));
+            start = i + 1;
+        }
+        return parts;
+    }
+
+    /// <summary>
+    /// The parts of a sentence that talk about a runway without saying it is the flow. A part that carries on a
+    /// runway list takes the earlier parts of that list with it: all of them when it is only a number
+    /// ("ILS RWY 8R, 9, 27 OTS": none of the three), otherwise up to one that states the flow itself
+    /// ("RWY 9, RWY 27 CLSD": both, but "LNDG RWY 9, RWY 27 CLSD": only 27).
+    /// </summary>
+    private static List<(int Start, int End)> NotFlowParts(string sentence, List<(int Start, int End)> parts)
+    {
+        string Text(int p) => sentence[parts[p].Start..parts[p].End];
+
+        var result = new List<(int Start, int End)>();
+        for (var p = 0; p < parts.Count; p++)
+        {
+            var text = Text(p);
+            if (!NotFlowWords.IsMatch(text)) continue;
+            result.Add(parts[p]);
+
+            if (StartsWithBareRunway.IsMatch(text))
+            {
+                for (var q = p - 1; q >= 0; q--)
+                {
+                    result.Add(parts[q]);
+                    if (!StartsWithBareRunway.IsMatch(Text(q))) break; // the head of the list
+                }
+            }
+            else if (StartsWithRunway.IsMatch(text))
+            {
+                for (var q = p - 1; q >= 0 && !FlowWords.IsMatch(Text(q)); q--)
+                    result.Add(parts[q]);
+            }
+        }
+        return result;
+    }
+
+    private static bool Within(List<(int Start, int End)> parts, int index) =>
+        parts.Exists(p => index >= p.Start && index < p.End);
+
+    /// <summary>True when one of the parts the runway list runs through has a word that states the flow.</summary>
+    private static bool StatesFlow(string sentence, List<(int Start, int End)> parts, Match list) =>
+        parts.Exists(p => p.Start < list.Index + list.Length && p.End > list.Index &&
+                          FlowWords.IsMatch(sentence[p.Start..p.End]));
 
     /// <summary>True when the two texts describe a different runway configuration or approach type.</summary>
     public static bool FlowChanged(string? current, string? updated) =>

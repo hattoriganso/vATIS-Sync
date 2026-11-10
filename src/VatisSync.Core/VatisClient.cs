@@ -84,11 +84,11 @@ public sealed class VatisClient(IVatisSocketFactory factory, Action<string>? tra
             n => n["value"] is JsonObject, ct).ConfigureAwait(false)
             ?? throw new VatisUnavailableException($"vATIS did not answer getAtis for {stationId}.");
 
-        var v = reply["value"]!;
+        var v = reply["value"];
         return new VatisAtisState(
-            (string?)v["networkConnectionStatus"] ?? "",
-            (string?)v["airportConditions"] ?? "",
-            (string?)v["notams"] ?? "");
+            Str(v, "networkConnectionStatus") ?? "",
+            Str(v, "airportConditions") ?? "",
+            Str(v, "notams") ?? "");
     }
 
     /// <summary>
@@ -98,19 +98,21 @@ public sealed class VatisClient(IVatisSocketFactory factory, Action<string>? tra
     public async Task<IReadOnlyList<KeyValuePair<string, string>>> GetContractionsAsync(
         string stationKey, CancellationToken ct = default)
     {
+        if (stationKey.Length < 4) return [];
         object payload = stationKey.EndsWith("_D") ? new { station = stationKey[..4], atisType = "Departure" }
             : stationKey.EndsWith("_A") ? new { station = stationKey[..4], atisType = "Arrival" }
             : new { station = stationKey[..4] };
 
-        var reply = await RequestAsync(new { type = "getContractions", value = payload }, _ => true, ReplyTimeout, ct)
+        var reply = await RequestOrThrowAsync(new { type = "getContractions", value = payload }, _ => true, ct)
             .ConfigureAwait(false);
 
-        var contractions = reply?["stations"]?.AsArray().FirstOrDefault()?["contractions"] as JsonObject;
-        if (contractions is null) return [];
+        // Read defensively: whatever answers on the vATIS port, a reply of the wrong shape means "no contractions".
+        var first = (reply?["stations"] as JsonArray)?.FirstOrDefault() as JsonObject;
+        if (first?["contractions"] is not JsonObject contractions) return [];
 
         var result = new List<KeyValuePair<string, string>>();
         foreach (var (variable, node) in contractions)
-            if ((string?)node?["text"] is { } text)
+            if (Str(node, "text") is { } text)
                 result.Add(new(variable, text));
         return result;
     }
@@ -140,18 +142,25 @@ public sealed class VatisClient(IVatisSocketFactory factory, Action<string>? tra
 
     // ---- plumbing ----
 
-    private static bool IsStationsReply(JsonNode n) => (string?)n["type"] == "stations" && n["stations"] is JsonArray;
+    private static bool IsStationsReply(JsonNode n) => Str(n, "type") == "stations" && n["stations"] is JsonArray;
+
+    /// <summary>The string under <paramref name="name"/>, or null if the node is not an object or the value is not a string.</summary>
+    private static string? Str(JsonNode? node, string name) =>
+        node is JsonObject o && o.TryGetPropertyValue(name, out var v) ? AsString(v) : null;
+
+    private static string? AsString(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<string>(out var s) ? s : null;
 
     private static IReadOnlyList<VatisStation> ParseStations(JsonNode reply)
     {
         var list = new List<VatisStation>();
         foreach (var s in reply["stations"]!.AsArray())
         {
-            var id = (string?)s?["id"];
-            var name = (string?)s?["name"];
+            var id = Str(s, "id");
+            var name = Str(s, "name");
             if (id is null || name is null) continue;
-            var presets = s!["presets"]?.AsArray().Select(p => (string?)p).OfType<string>().ToList() ?? [];
-            list.Add(new VatisStation(id, name, (string?)s["atisType"] ?? "", presets));
+            var presets = (s!["presets"] as JsonArray)?.Select(AsString).OfType<string>().ToList() ?? [];
+            list.Add(new VatisStation(id, name, Str(s, "atisType") ?? "", presets));
         }
         return list;
     }

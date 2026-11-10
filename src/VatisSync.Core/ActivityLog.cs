@@ -90,7 +90,9 @@ public sealed class ActivityLog
                 if (message.Length > MaxEntryChars) message = message[..MaxEntryChars] + $" ...[cut, {message.Length} characters]";
                 // A multi-line entry (a stack trace) keeps its lines under the first one, indented, so every entry
                 // still starts with a timestamp.
-                var text = message.Replace("\r\n", "\n").Replace("\n", "\n" + new string(' ', 32));
+                // Every kind of line break counts, and other control characters are written as codes, so text that
+                // came from outside (an error from the internet, a reply on the vATIS port) cannot pass for an entry.
+                var text = OneEntry(message).Replace("\n", "\n" + new string(' ', 32));
                 var entry = $"{now:yyyy-MM-dd HH:mm:ss.fff}  {label,-5}  {text}{Environment.NewLine}";
 
                 // Shared, so the file can be opened in an editor while the app is writing to it.
@@ -102,6 +104,25 @@ public sealed class ActivityLog
         {
             // Never let logging fail the app (disk full, folder locked, antivirus).
         }
+    }
+
+    /// <summary>The message with "\n" as its only line break and no other control characters.</summary>
+    private static string OneEntry(string message)
+    {
+        var sb = new StringBuilder(message.Length);
+        for (var i = 0; i < message.Length; i++)
+        {
+            var c = message[i];
+            if (c == '\r')
+            {
+                sb.Append('\n');
+                if (i + 1 < message.Length && message[i + 1] == '\n') i++;
+            }
+            else if (c is '\n' or '\v' or '\f' or (char)0x85 or (char)0x2028 or (char)0x2029) sb.Append('\n');
+            else if (char.IsControl(c) && c != '\t') sb.Append("\\u").Append(((int)c).ToString("X4"));
+            else sb.Append(c);
+        }
+        return sb.ToString();
     }
 
     /// <summary>Deletes day files nobody has written to for <see cref="KeepDays"/> days.</summary>

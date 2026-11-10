@@ -22,6 +22,9 @@ public sealed class WebSocketVatisSocketFactory : IVatisSocketFactory
 {
     public static readonly Uri DefaultUri = new("ws://127.0.0.1:49082/");
 
+    /// <summary>vATIS replies are a few kilobytes. A message past this size is dropped and the connection closed.</summary>
+    public const int MaxMessageBytes = 4_000_000;
+
     private readonly Uri _uri;
     private readonly TimeSpan _connectTimeout;
 
@@ -66,6 +69,11 @@ public sealed class WebSocketVatisSocketFactory : IVatisSocketFactory
                 {
                     result = await ws.ReceiveAsync(buffer, cts.Token).ConfigureAwait(false);
                     if (result.MessageType == WebSocketMessageType.Close) return null;
+                    if (ms.Length + result.Count > MaxMessageBytes)
+                    {
+                        ws.Abort(); // not vATIS, or not well: stop reading rather than fill memory
+                        return null;
+                    }
                     ms.Write(buffer, 0, result.Count);
                 } while (!result.EndOfMessage);
                 return Encoding.UTF8.GetString(ms.ToArray());

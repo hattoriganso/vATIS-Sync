@@ -28,6 +28,10 @@ public sealed class SyncEngine(
     private TaskCompletionSource _wake = NewWake();
     private readonly HashSet<string> _mutedForSession = [];
 
+    // The fill the controller asked for by pressing Start has been done. From then on nothing reaches a connected
+    // ATIS unchecked, including when the engine starts over by itself because vATIS stopped answering.
+    private bool _startFillDone;
+
     private SyncStatus _status = SyncStatus.Initial;
     private CancellationTokenSource? _cts;
     private Task? _run;
@@ -89,6 +93,9 @@ public sealed class SyncEngine(
     /// <summary>Runs until cancelled. Returns normally on cancellation, with phase Stopped.</summary>
     public async Task RunAsync(CancellationToken ct)
     {
+        _declined.Clear();
+        _mutedForSession.Clear();
+        _startFillDone = false;
         try
         {
             while (!ct.IsCancellationRequested)
@@ -127,9 +134,8 @@ public sealed class SyncEngine(
     /// <summary>One continuous stretch of talking to a running vATIS. Throws if vATIS goes away.</summary>
     private async Task RunSessionAsync(CancellationToken ct)
     {
+        // What the controller disregarded is kept: starting over after a hiccup is not a new Start.
         _stations.Clear();
-        _declined.Clear();
-        _mutedForSession.Clear();
         var letters = new LetterSync();
         Diag($"sync session starting: refresh every {options.Interval.TotalMinutes:0.##} min, approval {options.Approval}, " +
              $"max connections {options.MaxConnections}, airports [{string.Join(", ", options.Airports)}], " +
@@ -150,10 +156,15 @@ public sealed class SyncEngine(
 
         // Initial pass. The first configure runs while stations are still disconnected, so vATIS
         // can't apply the ATIS letter yet; the second one (after connecting) sets it.
+        // Only the fill that follows Start is written unchecked. When the engine starts over by itself (vATIS missed
+        // a reply, or was restarted), a station that is still connected is live, so it is checked like any refresh.
+        var ask = _startFillDone;
+        if (ask) Diag("starting over without a new Start: connected stations are checked before anything is written");
         Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineLoading));
-        await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
+        await ConfigureAllAsync(connectedOnly: false, ask, removals: null, letters, ct).ConfigureAwait(false);
+        _startFillDone = true;
         await ConnectAsync(letters, ct).ConfigureAwait(false);
-        await ConfigureAllAsync(connectedOnly: false, removals: null, letters, ct).ConfigureAwait(false);
+        await ConfigureAllAsync(connectedOnly: false, ask, removals: null, letters, ct).ConfigureAwait(false);
         letters.EndStartup(); // from here on vATIS advances its own letter; we only send text
 
         var snapshot = await SnapshotAsync(ct).ConfigureAwait(false);
@@ -188,7 +199,7 @@ public sealed class SyncEngine(
             if (removals is null)
                 removals = await BuildRemovalsAsync(snapshot, ct).ConfigureAwait(false);
 
-            await ConfigureAllAsync(connectedOnly: true, removals, letters, ct).ConfigureAwait(false);
+            await ConfigureAllAsync(connectedOnly: true, ask: true, removals, letters, ct).ConfigureAwait(false);
             lastSync = _time.GetUtcNow();
         }
     }
@@ -197,6 +208,7 @@ public sealed class SyncEngine(
 
     private async Task ConfigureAllAsync(
         bool connectedOnly,
+        bool ask,
         Dictionary<string, List<string>>? removals,
         LetterSync letters,
         CancellationToken ct)
@@ -240,7 +252,9 @@ public sealed class SyncEngine(
                  $"vATIS has {state.AirportConditions.Length}+{state.Notams.Length} chars, " +
                  $"conditions {(state.AirportConditions.Trim() == text.AirportConditions.Trim() ? "identical" : "differ")}");
 
-            if (connectedOnly && !text.IsAvailable)
+            // A live ATIS is never replaced by "not available": it keeps what it has until real text arrives.
+            // A live ATIS is never replaced by "not available": it keeps what it has until real text arrives.
+            if ((connectedOnly || (ask && state.IsConnected)) && !text.IsAvailable)
             {
                 Record(s.Key, state.IsConnected, false);
                 continue;
@@ -249,9 +263,9 @@ public sealed class SyncEngine(
             planned.Add(new Planned(s, state, text));
         }
 
-        // Refreshes only: the startup pass is something the controller asked for by pressing Start.
+        // Not the fill that follows Start: that one is something the controller asked for by pressing Start.
         var held = new HashSet<string>();
-        if (connectedOnly)
+        if (ask)
         {
             foreach (var group in planned.GroupBy(p => AirportOf(p.Station.Key)))
                 if (!await ApprovedAsync(group.Key, group.ToList(), ct).ConfigureAwait(false))

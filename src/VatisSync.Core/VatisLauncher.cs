@@ -11,14 +11,21 @@ public sealed class VatisLauncher : IVatisLauncher
 
     /// <param name="vatisDir">Defaults to %LOCALAPPDATA%\org.vatsim.vatis.</param>
     public VatisLauncher(string? vatisDir = null) =>
-        _vatisDir = vatisDir ?? Path.Combine(
-            Environment.GetEnvironmentVariable("LOCALAPPDATA") ?? "", "org.vatsim.vatis");
+        _vatisDir = vatisDir ?? Path.Combine(LocalAppData(), "org.vatsim.vatis");
+
+    private static string LocalAppData() =>
+        Environment.GetEnvironmentVariable("LOCALAPPDATA") is { Length: > 0 } fromEnvironment
+            ? fromEnvironment
+            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
     public string ConfigPath => Path.Combine(_vatisDir, "AppConfig.json");
     public string ExePath => Path.Combine(_vatisDir, "current", "vATIS.exe");
 
     public LaunchResult EnsureRunning()
     {
+        // Only ever a full path: a relative one would be looked up in whatever folder the app was started from.
+        if (!Path.IsPathFullyQualified(ExePath)) return LaunchResult.NotFound;
+
         EnableAutoFetchAtisLetter(ConfigPath);
 
         if (Process.GetProcessesByName("vATIS").Length > 0) return LaunchResult.AlreadyRunning;
@@ -41,6 +48,7 @@ public sealed class VatisLauncher : IVatisLauncher
     /// </summary>
     public static bool EnableAutoFetchAtisLetter(string configPath)
     {
+        var temp = configPath + ".vatis-sync.tmp";
         try
         {
             if (!File.Exists(configPath)) return false;
@@ -49,11 +57,15 @@ public sealed class VatisLauncher : IVatisLauncher
                 return false;
 
             config["autoFetchAtisLetter"] = true;
-            File.WriteAllText(configPath, config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            // Through a temporary file, so vATIS's settings are never left half-written.
+            File.WriteAllText(temp, config.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.Move(temp, configPath, overwrite: true);
             return true;
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
+            try { File.Delete(temp); }
+            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { }
             return false;
         }
     }
