@@ -38,13 +38,13 @@ they are always synced together or not at all, so the answer covers every statio
 The window is titled `Approve ATIS change - KPHX` and stays on top of other windows. It does not block the app.
 
 - **Headline.** `KPHX: runways changed`, with a line under it that says how
-  (`From runways 26; ILS 26 to runways 8; ILS 8.`).
+  (`Runways 26 → 8.`, with the approaches too when they change: `Approaches ILS → RNAV, VISUAL.`).
 - **Two panes.** **Now in vATIS** on the left, and **New (from the real-world D-ATIS)** on the right. The words that
   differ are highlighted, red on the left and green on the right, and a run of changed words is highlighted as one
   phrase.
 - **More than one station.** When several stations of the airport would change, each gets its own pair of
-  panes, one under the other, headed by its name and what changed (`KPHX_A: from runways 26; ILS 26 to runways 8;
-  ILS 8`, or `KPHX_D: the ATIS text changed` for a station whose runways stay the same). The window scrolls if they
+  panes, one under the other, headed by its name and what changed (`KPHX_A: Runways 26 → 8.`,
+  or `KPHX_D: The ATIS text changed.` for a station whose runways stay the same). The window scrolls if they
   do not all fit.
 
 ## The three choices
@@ -84,12 +84,12 @@ So:
 
 Disregarding a change means vATIS now differs from the real-world ATIS, and you should never be unaware of that.
 
-- **Desynced.** The airport's status word in the list (it is shown for the airport, never for one station) turns amber and reads **Desynced**, in place of Started or
+- **Desynced.** The airport's status word in the list (it is shown for the airport, never for one station) turns amber and reads **Desynced**, in place of Connected or
   Synced, for as long as a change you disregarded is still waiting. The dot beside it turns amber too, and on the
   Overview the D-ATIS column of each of its stations reads **Desynced**. It goes away by itself when vATIS and the
   real-world ATIS agree again, when you press **Apply** the next time you are asked, or when you stop the sync.
 - **The Log.** For an airport disregarded for the session, each new change that would have asked is written to the Log
-  once, as `KPHX: change not applied, vATIS now differs from the real-world ATIS (...)`, in amber. The same text does
+  once, as `KPHX: change not applied, vATIS now differs from the real-world ATIS. Runways 26 → 8.`, in amber. The same text does
   not repeat on every refresh.
 
 ## Resync

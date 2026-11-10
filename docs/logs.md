@@ -27,8 +27,8 @@ One entry per line, starting with the date and time to the millisecond and a lev
 
 ```
 2026-11-10 14:03:22.123  INFO   Read your vATIS profile: 3 D-ATIS airports found.
-2026-11-10 14:08:22.456  OK     KPHX: update approved (The runway configuration changed: ...)
-2026-11-10 14:13:22.789  WARN   KPHX: change not applied, vATIS now differs from the real-world ATIS (...)
+2026-11-10 14:08:22.456  OK     KPHX: update approved. Runways 26 → 8.
+2026-11-10 14:13:22.789  WARN   KPHX: change not applied, vATIS now differs from the real-world ATIS. Runways 8 → 26.
 2026-11-10 14:13:23.001  ERROR  Could not reach vATIS on port 5000.
 2026-11-10 14:13:23.050  TRACE  KPHX: held, nothing written
 ```

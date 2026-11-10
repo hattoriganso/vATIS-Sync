@@ -192,7 +192,7 @@ PUSH`) is never touched.
   has the same choice (both Remove, or both Replace with the same frequency). If only clearance is on Remove, the text
   stays, because ground may still be online.
 - **Never changed:** the ATIS frequency itself (`DEPARTURE ATIS 118.125`) and Flight Service frequencies.
-  The Flight service built-in rule runs first and removes most of those sentences anyway.
+  The Flight Service built-in rule runs first and removes most of those sentences anyway.
 - **Known limit.** When an instruction is woven into a longer list, only its own clause goes: KPHX's
   `CLNC DLVY FREQ 133.7, INT, E13 INT, ...` leaves `INT, E13 INT, ...` behind.
 
