@@ -50,7 +50,16 @@
                                       SelectedValuePath="Mode" SelectedValue="{Binding Approval}" HorizontalAlignment="Left"
                                       MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
-                                       Text="Before a refresh changes the text of an ATIS you are connected to, you see what would change and decide. The first fill when you press Start never asks."/>
+                                       Text="When a refresh would change the runways or approaches of an ATIS you are connected to, you see what would change and decide. Nothing else asks. The first fill when you press Start never asks."/>
+                        </StackPanel>
+
+                        <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>
+                        <StackPanel Margin="0,16,0,0">
+                            <TextBlock Text="Log files" Style="{StaticResource CardTitle}"/>
+                            <CheckBox IsChecked="{Binding DetailedLog}" Margin="0,4"
+                                      Content="Keep a detailed record of what vATIS says (helps find problems)"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,0"
+                                       Text="Everything in the Log is always saved to a file, one per day, and kept for 14 days. The detailed record adds every message sent to and received from vATIS, and why each station was written or held. Open the folder with the button above the Log on the Overview."/>
                         </StackPanel>
 
                         <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>

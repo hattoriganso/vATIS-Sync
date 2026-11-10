@@ -82,6 +82,7 @@ public static class Msg
     public static readonly MessageKey EngineWaitingApproval = new("engine.waiting-approval", "station");
     public static readonly MessageKey EngineApprovalKept = new("engine.approval-kept", "station", "summary");
     public static readonly MessageKey EngineApprovalApplied = new("engine.approval-applied", "station", "summary");
+    public static readonly MessageKey LogFolderOpenFailed = new("log.folder-open-failed", "path", "reason");
     public static readonly MessageKey EngineResync = new("engine.resync", "station");
     public static readonly MessageKey EngineDisregardedForSession = new("engine.disregarded-for-session", "station", "summary");
     public static readonly MessageKey EngineConnected = new("engine.connected", "station");

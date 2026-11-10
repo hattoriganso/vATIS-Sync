@@ -23,14 +23,14 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly AirportFileStore _airportFiles;
     private readonly DatisPreviewBuilder _preview;
     private SyncEngine? _engine;
+    private readonly ActivityLog? _activityLog;
     private AppSettings _settings;
     private bool _loading = true;
 
     public static IReadOnlyList<ApprovalChoice> ApprovalChoices { get; } =
     [
         new(ApprovalMode.RunwayChanges, "Ask me when the runways change"),
-        new(ApprovalMode.Always, "Ask me before any change"),
-        new(ApprovalMode.Never, "Apply changes automatically"),
+        new(ApprovalMode.Never, "Apply runway changes automatically"),
     ];
 
     public static IReadOnlyList<FrequencyModeChoice> FrequencyModeChoices => FrequencySetEditor.ModeChoices;
@@ -40,8 +40,10 @@ public sealed partial class MainViewModel : ObservableObject
         Func<CancellationToken, Task<IReadOnlyList<VatisStation>>>? stationsSource = null,
         SettingsStore? store = null,
         AirportFileStore? airportFiles = null,
-        DatisPreviewBuilder? preview = null)
+        DatisPreviewBuilder? preview = null,
+        ActivityLog? activityLog = null)
     {
+        _activityLog = activityLog;
         Banners = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind != NoticeKind.Info };
         Toasts = new ListCollectionView(_notices.Items) { Filter = n => ((Notice)n).Kind == NoticeKind.Info };
         _preview = preview ?? EngineFactory.CreatePreviewBuilder();
@@ -67,6 +69,7 @@ public sealed partial class MainViewModel : ObservableObject
         ConnectProfileStations = _settings.ConnectProfileStations;
         LaunchVatis = _settings.LaunchVatis;
         Approval = _settings.Approval;
+        DetailedLog = _settings.DetailedLog;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
         CloseToTray = _settings.CloseToTray;
@@ -147,6 +150,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Shows a message in the bar. Confirmations (<see cref="NoticeKind.Info"/>) clear themselves after a few seconds.</summary>
     private void Notify(string key, NoticeKind kind, string message)
     {
+        _activityLog?.Write($"notice shown ({kind}, {key}): {message}",
+            kind == NoticeKind.Error ? LogKind.Error : kind == NoticeKind.Warning ? LogKind.Warning : LogKind.Info);
         var notice = _notices.Post(key, kind, message);
         if (kind != NoticeKind.Info) return;
         _ = Task.Delay(InfoLifetime - FadeTime).ContinueWith(_ => OnUi(() => notice.IsFading = true), TaskScheduler.Default);
@@ -374,6 +379,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _connectProfileStations;
     [ObservableProperty] private bool _launchVatis;
     [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
+    [ObservableProperty] private bool _detailedLog = true;
     [ObservableProperty] private bool _startSyncOnLaunch;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
@@ -390,6 +396,12 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnConnectProfileStationsChanged(bool value) => Save();
     partial void OnLaunchVatisChanged(bool value) => Save();
     partial void OnApprovalChanged(ApprovalMode value) => Save();
+
+    partial void OnDetailedLogChanged(bool value)
+    {
+        if (_activityLog is not null) _activityLog.TraceEnabled = value;
+        Save();
+    }
     partial void OnStartSyncOnLaunchChanged(bool value) => Save();
     partial void OnStartMinimizedChanged(bool value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
@@ -426,6 +438,7 @@ public sealed partial class MainViewModel : ObservableObject
         ConnectProfileStations = ConnectProfileStations,
         LaunchVatis = LaunchVatis,
         Approval = Approval,
+        DetailedLog = DetailedLog,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),
         StartSyncOnLaunch = StartSyncOnLaunch,
@@ -590,8 +603,25 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ClearLog() => LogLines.Clear();
 
+    /// <summary>Opens the folder holding the log files in Explorer.</summary>
+    [RelayCommand]
+    private void OpenLogFolder()
+    {
+        var folder = _activityLog?.Directory ?? ActivityLog.DefaultDirectory;
+        try
+        {
+            Directory.CreateDirectory(folder);
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            AddLog(Messages.Get(Msg.LogFolderOpenFailed, new { path = folder, reason = ex.Message }), LogKind.Warning);
+        }
+    }
+
     private void AddLog(string message, LogKind kind = LogKind.Info)
     {
+        _activityLog?.Write(message, kind);
         LogLines.Add(new LogLine($"{DateTime.Now:HH:mm:ss}  {message}", kind));
         while (LogLines.Count > MaxLogLines) LogLines.RemoveAt(0);
     }

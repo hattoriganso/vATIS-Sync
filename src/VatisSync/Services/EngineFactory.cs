@@ -10,6 +10,11 @@ public static class EngineFactory
 
     public static LocalReplacementStore ReplacementStore { get; } = CreateStore();
 
+    /// <summary>Where the activity log is kept. Set once at startup; without it nothing is written to disk.</summary>
+    public static ActivityLog? Log { get; set; }
+
+    private static Action<string>? Trace => Log is null ? null : Log.Trace;
+
     private static HttpClient CreateHttp()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -24,17 +29,20 @@ public static class EngineFactory
     /// and changes nothing in it. Throws <see cref="VatisUnavailableException"/> if vATIS cannot be reached.
     /// </summary>
     public static Task<IReadOnlyList<VatisStation>> GetProfileStationsAsync(CancellationToken ct) =>
-        new VatisClient(new WebSocketVatisSocketFactory()).GetStationsAsync(ct);
+        new VatisClient(new WebSocketVatisSocketFactory(), Trace).GetStationsAsync(ct);
 
     /// <summary>Builds what an airport's ATIS would be from the real-world D-ATIS, without touching vATIS (the Summary tab).</summary>
     public static DatisPreviewBuilder CreatePreviewBuilder() => new(new DatisFetcher(Http), ReplacementStore);
 
     public static SyncEngine Create(SyncOptions options, IUpdateApprover? approver = null) => new(
-        new VatisClient(new WebSocketVatisSocketFactory()),
+        new VatisClient(new WebSocketVatisSocketFactory(), Trace),
         new DatisFetcher(Http),
         ReplacementStore,
         new CrcPositionResolver(),
         new VatisLauncher(),
         options,
-        approver: approver);
+        approver: approver)
+    {
+        Diagnostics = Trace,
+    };
 }

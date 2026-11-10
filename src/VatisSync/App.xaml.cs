@@ -19,11 +19,13 @@ public partial class App : Application
     private MainWindow? _window;
     private MainViewModel? _vm;
     private readonly ErrorLog _errorLog = new();
+    private readonly ActivityLog _activity = new();
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        new SafetyNet(this, _errorLog, () => _vm).Install();
+        new SafetyNet(this, _errorLog, () => _vm, _activity).Install();
+        EngineFactory.Log = _activity;
 
         // Colors come from a palette file; Windows High Contrast gets its own palette, and switching it on or off applies live.
         ApplyPalette();
@@ -42,13 +44,16 @@ public partial class App : Application
             return;
         }
         ListenForShowRequests();
+        WriteStartupRecord();
 
         var approver = new WpfUpdateApprover();
         approver.Asked = request => _tray?.ShowNotification("ATIS change needs your approval",
             $"{request.Airport}: {request.Summary}");
         _vm = new MainViewModel(
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
-            approver: approver);
+            approver: approver,
+            activityLog: _activity);
+        _activity.TraceEnabled = _vm.DetailedLog;
         _window = new MainWindow(_vm);
         CreateTray();
         _window.HiddenToTray += () =>
@@ -126,8 +131,22 @@ public partial class App : Application
         Shutdown();
     }
 
+    /// <summary>The first lines of a run: enough to know what was running, and on what, when reading a log afterwards.</summary>
+    private void WriteStartupRecord()
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "unknown";
+        _activity.Write($"vATIS-Sync {version} started (process {Environment.ProcessId}, " +
+                        $"{System.Runtime.InteropServices.RuntimeInformation.OSDescription}, " +
+                        $"{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, " +
+                        $"{System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture})");
+        _activity.Write($"settings file {SettingsStore.DefaultPath}; log files {_activity.Directory}");
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        _activity.Write("vATIS-Sync exiting");
         _tray?.Dispose();
         _showEvent?.Dispose();
         try { _mutex?.ReleaseMutex(); } catch (ApplicationException) { }

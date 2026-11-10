@@ -57,6 +57,12 @@ public sealed record AppSettings
     /// <summary>Closing the window keeps the app running in the tray.</summary>
     public bool CloseToTray { get; init; } = true;
 
+    /// <summary>
+    /// Keep a detailed record in the log files of everything sent to and received from vATIS and why each station was
+    /// written or held. On by default, since the first thing needed when something misbehaves is that detail.
+    /// </summary>
+    public bool DetailedLog { get; init; } = true;
+
     /// <summary>The "still running in the tray" notification has been shown once already.</summary>
     public bool TrayHintShown { get; init; }
 

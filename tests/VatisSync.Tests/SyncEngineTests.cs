@@ -257,8 +257,8 @@ public class SyncEngineTests
 
         var request = Assert.Single(approver.Requests);
         Assert.Equal("KSFO", request.Airport);
-        Assert.True(request.FlowChanged);
         var change = Assert.Single(request.Changes);
+        Assert.True(change.FlowChanged);
         Assert.Equal("KSFO", change.Station);
         Assert.Contains("28R", change.CurrentFlow.Runways);
         Assert.Contains("10L", change.NewFlow.Runways);
@@ -483,18 +483,35 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task Always_mode_asks_even_when_only_a_taxiway_changed()
+    public async Task The_diagnostics_say_why_a_change_was_asked_about_held_or_applied()
     {
-        var approver = new FakeApprover();
-        var r = ApprovalRig(approver, ApprovalMode.Always);
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        var diag = new List<string>();
+        r.Engine.Diagnostics = m => { lock (diag) diag.Add(m); };
         await StartedWith(r, "ILS RWY 28R IN USE. TWY B CLSD.");
 
+        // A taxiway change: applied without asking, and the trace says it was not a runway change.
         r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE. TWY D CLSD.")];
         await WaitForText(r, "TWY D CLSD");
+
+        // A runway change: asked, disregarded, then not asked again.
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE. TWY D CLSD.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await Task.Delay(300);
         await r.Engine.StopAsync();
 
-        var request = Assert.Single(approver.Requests);
-        Assert.False(request.FlowChanged);
+        List<string> lines; lock (diag) lines = [.. diag];
+        Assert.Contains(lines, l => l.StartsWith("sync session starting") && l.Contains("approval RunwayChanges"));
+        Assert.Contains(lines, l => l.Contains("real-world D-ATIS fetch succeeded"));
+        Assert.Contains(lines, l => l.StartsWith("KSFO: connected") && l.Contains("conditions differ"));
+        Assert.Contains(lines, l => l.Contains("no runway change on a connected station") && l.Contains("writing without asking"));
+        Assert.Contains(lines, l => l.Contains("runway change, asking the controller"));
+        Assert.Contains(lines, l => l.Contains("controller chose Disregard"));
+        Assert.Contains(lines, l => l.Contains("already disregarded"));
+        Assert.Contains(lines, l => l.StartsWith("KSFO: held, nothing written"));
+        Assert.Contains(lines, l => l.StartsWith("KSFO: written"));
+        Assert.Contains(lines, l => l.StartsWith("status: Stopped"));
     }
 
     [Fact]

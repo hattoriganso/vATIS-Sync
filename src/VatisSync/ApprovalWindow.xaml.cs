@@ -21,15 +21,12 @@ public partial class ApprovalWindow : Window
         Title = $"Approve ATIS change - {request.Airport}";
         var several = request.Changes.Count > 1;
 
-        // The headline says what changed; the line under it adds the detail, and only when there is some to add.
-        // With several stations the detail goes above each station's own pair of texts instead.
-        Headline.Text = request.FlowChanged
-            ? $"{request.Airport}: runways changed"
-            : $"{request.Airport}: the ATIS text changed";
+        // A question is only ever asked for a runway change. With one station the line under the headline says how; with
+        // several, the detail goes above each station's own pair of texts instead.
+        Headline.Text = $"{request.Airport}: runways changed";
         var only = request.Changes[0];
-        var showSummary = !several && only.FlowChanged;
-        Summary.Text = showSummary ? $"From {only.CurrentFlow.Describe()} to {only.NewFlow.Describe()}." : "";
-        Summary.Visibility = showSummary ? Visibility.Visible : Visibility.Collapsed;
+        Summary.Text = several ? "" : $"From {only.CurrentFlow.Describe()} to {only.NewFlow.Describe()}.";
+        Summary.Visibility = several ? Visibility.Collapsed : Visibility.Visible;
         MuteButton.Content = $"Disregard {request.Airport} for this session";
 
         foreach (var change in request.Changes) Sections.Children.Add(BuildSection(change, several));

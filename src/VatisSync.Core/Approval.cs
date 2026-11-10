@@ -1,19 +1,32 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace VatisSync.Core;
 
-/// <summary>When the controller must approve a change before it reaches a connected ATIS.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+/// <summary>Whether the controller must approve a runway change before it reaches a connected ATIS.</summary>
+[JsonConverter(typeof(ApprovalModeConverter))]
 public enum ApprovalMode
 {
     /// <summary>Apply every refresh without asking.</summary>
     Never,
 
-    /// <summary>Ask only when the runways or approach types in the text change. The default.</summary>
+    /// <summary>Ask when the runways or approach types in the text change, and for nothing else. The default.</summary>
     RunwayChanges,
+}
 
-    /// <summary>Ask whenever the Airport Conditions text would change.</summary>
-    Always,
+/// <summary>
+/// Reads the mode from settings.json. Anything but "Never" means RunwayChanges, so a file written by an older version
+/// (which also had an "Always" mode, since removed) still loads and keeps all of its other settings.
+/// </summary>
+public sealed class ApprovalModeConverter : JsonConverter<ApprovalMode>
+{
+    public override ApprovalMode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType == JsonTokenType.String && string.Equals(reader.GetString(), nameof(ApprovalMode.Never), StringComparison.OrdinalIgnoreCase)
+            ? ApprovalMode.Never
+            : ApprovalMode.RunwayChanges;
+
+    public override void Write(Utf8JsonWriter writer, ApprovalMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
 }
 
 public enum ApprovalDecision
@@ -49,14 +62,11 @@ public sealed record StationChange(
 
 /// <summary>
 /// One question per airport: an airport's stations are synced together or not at all, so the answer covers every
-/// station of the airport and the question lists every connected station that would change.
+/// station of the airport and the question lists every station of it that would change.
 /// </summary>
 /// <param name="Airport">The four-letter airport code, e.g. "KPHX".</param>
 public sealed record ApprovalRequest(string Airport, IReadOnlyList<StationChange> Changes)
 {
-    /// <summary>True when the runways or approaches differ on any of the stations.</summary>
-    public bool FlowChanged => Changes.Any(c => c.FlowChanged);
-
     public string Summary => Changes.Count == 1
         ? Changes[0].Summary
         : string.Join(" ", Changes.Select(c => $"{c.Station}: {c.Summary}"));

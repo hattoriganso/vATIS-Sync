@@ -163,6 +163,9 @@
   "engine.approval-kept": "{station}: kept the current ATIS ({summary})",
   "engine.approval-applied": "{station}: update approved ({summary})",
 
+  // Log, when the log folder cannot be opened from the Log panel.   {path}, {reason}
+  "log.folder-open-failed": "Could not open the log folder {path}: {reason}",
+
   // Log, when you press Resync on an airport you disregarded.   {station} is the airport
   "engine.resync": "{station}: resync requested, checking the real-world ATIS now",
 

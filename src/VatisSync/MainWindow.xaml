@@ -444,6 +444,8 @@
                         </Border>
                         <DockPanel Grid.Row="1" Margin="0,26,0,8">
                             <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearLogCommand}"/>
+                            <Button DockPanel.Dock="Right" Content="Open log folder" Command="{Binding OpenLogFolderCommand}" Margin="0,0,8,0"
+                                    ToolTip="The Log here is cleared when you close the app. The log files in this folder are kept for 14 days."/>
                             <TextBlock Text="Log" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
                         <Grid Grid.Row="2">

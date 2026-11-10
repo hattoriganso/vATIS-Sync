@@ -49,6 +49,30 @@ public class AppSettingsTests : TempDirTests
     }
 
     [Fact]
+    public void The_detailed_log_is_on_by_default_and_the_choice_is_remembered()
+    {
+        Assert.True(new AppSettings().DetailedLog);
+        Assert.True(new SettingsStore(Write("old.json", "{ \"intervalMinutes\": 7 }")).Load().DetailedLog); // a file from before it existed
+
+        var store = new SettingsStore(SettingsPath);
+        store.Save(new AppSettings { DetailedLog = false });
+        Assert.False(store.Load().DetailedLog);
+    }
+
+    [Theory]
+    [InlineData("Always", ApprovalMode.RunwayChanges)] // the removed "ask before any change" mode of older versions
+    [InlineData("RunwayChanges", ApprovalMode.RunwayChanges)]
+    [InlineData("Never", ApprovalMode.Never)]
+    [InlineData("something-new", ApprovalMode.RunwayChanges)]
+    public void Approval_mode_in_an_older_or_odd_file_still_loads_and_keeps_the_other_settings(string mode, ApprovalMode expected)
+    {
+        var path = Write("settings.json", $"{{ \"approval\": \"{mode}\", \"intervalMinutes\": 15 }}");
+        var loaded = new SettingsStore(path).Load();
+        Assert.Equal(expected, loaded.Approval);
+        Assert.Equal(15, loaded.IntervalMinutes); // nothing else is lost
+    }
+
+    [Fact]
     public void Unknown_keys_and_comments_are_tolerated_and_partial_files_fill_in_defaults()
     {
         var path = Write("settings.json", "{ // mine\n \"intervalMinutes\": 15, \"futureThing\": 1, }");

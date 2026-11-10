@@ -33,6 +33,11 @@ public sealed class SyncEngine(
     private Task? _run;
 
     public SyncStatus Status => _status;
+
+    /// <summary>Told what the engine decided and why (for the activity log). Detail only: the Log panel is <see cref="LogEntry"/>.</summary>
+    public Action<string>? Diagnostics { get; set; }
+
+    private void Diag(string message) => Diagnostics?.Invoke(message);
     public bool IsRunning => _run is { IsCompleted: false };
 
     public event EventHandler<SyncStatus>? StatusChanged;
@@ -98,6 +103,7 @@ public sealed class SyncEngine(
                 }
                 catch (VatisUnavailableException ex)
                 {
+                    Diag($"vATIS unavailable: {ex}");
                     Info(Messages.Get(Msg.EngineUnreachableLog, new { reason = ex.Message }), LogKind.Warning);
                     Publish(SyncPhase.WaitingForVatis, Messages.Get(Msg.EngineUnreachable), isError: true);
                 }
@@ -125,6 +131,10 @@ public sealed class SyncEngine(
         _declined.Clear();
         _mutedForSession.Clear();
         var letters = new LetterSync();
+        Diag($"sync session starting: refresh every {options.Interval.TotalMinutes:0.##} min, approval {options.Approval}, " +
+             $"max connections {options.MaxConnections}, airports [{string.Join(", ", options.Airports)}], " +
+             $"follow CRC position {options.AutoConnectActivePosition}, connect profile stations {options.ConnectProfileStations}, " +
+             $"launch vATIS {options.LaunchVatis}, approver {(approver is null ? "none" : "present")}");
 
         Publish(SyncPhase.Starting, Messages.Get(Msg.EngineStarting));
         if (options.LaunchVatis)
@@ -197,6 +207,9 @@ public sealed class SyncEngine(
         var builtInByAirport = new Dictionary<string, ReplacementRules>();
 
         var fetch = await datis.FetchAsync(ct).ConfigureAwait(false);
+        Diag($"{(connectedOnly ? "refresh" : "initial fill")}: real-world D-ATIS fetch " +
+             (fetch.Succeeded ? "succeeded" : $"FAILED ({fetch.Error})") +
+             $"{(fetch.FromCache ? ", using the saved copy" : "")}: {fetch.Entries.Count} entries; {stations.Count} vATIS stations [{string.Join(", ", stations.Select(s => s.Key))}]");
         if (!fetch.Succeeded)
             Info(Messages.Get(fetch.FromCache ? Msg.EngineDatisFailedCached : Msg.EngineDatisFailedNone, new { reason = fetch.Error }), LogKind.Warning);
         var now = _time.GetUtcNow();
@@ -222,6 +235,11 @@ public sealed class SyncEngine(
                 await client.GetContractionsAsync(s.Key, ct).ConfigureAwait(false));
             var text = DatisFormatter.Format(s.Key, fetch.Entries, now, stationRules, contractions, frequencies);
 
+            Diag($"{s.Key}: {(state.IsConnected ? "connected" : $"not connected ({state.NetworkConnectionStatus})")}, " +
+                 $"real-world text {(text.IsAvailable ? $"available ({text.AirportConditions.Length}+{text.Notams.Length} chars)" : "not available")}, " +
+                 $"vATIS has {state.AirportConditions.Length}+{state.Notams.Length} chars, " +
+                 $"conditions {(state.AirportConditions.Trim() == text.AirportConditions.Trim() ? "identical" : "differ")}");
+
             if (connectedOnly && !text.IsAvailable)
             {
                 Record(s.Key, state.IsConnected, false);
@@ -244,6 +262,7 @@ public sealed class SyncEngine(
         {
             if (held.Contains(AirportOf(s.Key)))
             {
+                Diag($"{s.Key}: held, nothing written");
                 Record(s.Key, state.IsConnected, text.IsAvailable);
                 continue;
             }
@@ -254,6 +273,7 @@ public sealed class SyncEngine(
             await client.ConfigureAtisAsync(s.Id, text.AirportConditions, text.Notams, sync, ct)
                 .ConfigureAwait(false);
             if (sync) letters.MarkSynced(s.Key);
+            Diag($"{s.Key}: written ({text.AirportConditions.Length}+{text.Notams.Length} chars, ATIS letter sync {sync})");
 
             Record(s.Key, state.IsConnected, text.IsAvailable, now);
         }
@@ -280,11 +300,15 @@ public sealed class SyncEngine(
     /// </summary>
     private async Task<bool> ApprovedAsync(string key, List<Planned> airport, CancellationToken ct)
     {
-        if (options.Approval == ApprovalMode.Never || approver is null) return true;
+        if (options.Approval == ApprovalMode.Never || approver is null)
+        {
+            Diag($"{key}: approval off ({(approver is null ? "no approver" : "setting")}), writing without asking");
+            return true;
+        }
 
-        // What triggers the question: a connected station whose change needs approval (any change, or a runway change,
-        // by the setting). What the question shows: every station of the airport that would change, since all of
-        // them are applied or held together.
+        // What triggers the question: a connected station whose runways or approaches would change, and nothing else.
+        // What the question shows: every station of the airport that would change, since all of them are applied or
+        // held together.
         var asks = false;
         var changes = new List<StationChange>();
         var fingerprints = new List<string>();
@@ -295,7 +319,7 @@ public sealed class SyncEngine(
             if (current.Length == 0 || current == updated) continue; // nothing live to protect / nothing changes
 
             var flowChanged = FlowAnalyzer.FlowChanged(current, updated);
-            if (state.IsConnected && (options.Approval == ApprovalMode.Always || flowChanged)) asks = true;
+            if (state.IsConnected && flowChanged) asks = true;
 
             changes.Add(new StationChange(station.Key, current, updated, flowChanged,
                 FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated)));
@@ -305,6 +329,7 @@ public sealed class SyncEngine(
         if (!asks)
         {
             _declined.Remove(key); // nothing needs approval, or vATIS and the real world agree again
+            Diag($"{key}: no runway change on a connected station ({changes.Count} station(s) differ in other ways), writing without asking");
             return true;
         }
 
@@ -315,6 +340,7 @@ public sealed class SyncEngine(
         // written to the Log (once per new text) so the controller is never unaware that vATIS has fallen behind.
         if (_mutedForSession.Contains(key))
         {
+            Diag($"{key}: runway change, but the airport is disregarded for the session; not applied");
             if (!_declined.TryGetValue(key, out var noted) || noted != fingerprint)
             {
                 _declined[key] = fingerprint;
@@ -324,10 +350,16 @@ public sealed class SyncEngine(
         }
 
         // Declined before and the real-world text has not moved since: stay quiet and keep the current text.
-        if (_declined.TryGetValue(key, out var seen) && seen == fingerprint) return false;
+        if (_declined.TryGetValue(key, out var seen) && seen == fingerprint)
+        {
+            Diag($"{key}: runway change already disregarded and the real-world text has not moved; not asking again");
+            return false;
+        }
 
+        Diag($"{key}: runway change, asking the controller. {request.Summary}");
         Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineWaitingApproval, new { station = key }));
         var decision = await approver.RequestAsync(request, ct).ConfigureAwait(false);
+        Diag($"{key}: controller chose {decision}");
 
         switch (decision)
         {
@@ -464,6 +496,8 @@ public sealed class SyncEngine(
     private void Publish(SyncPhase phase, string? message, DateTimeOffset? lastSync = null, DateTimeOffset? nextSync = null,
         bool isError = false)
     {
+        if (phase != _status.Phase || (message is not null && message != _status.Message))
+            Diag($"status: {phase}{(message is null ? "" : " - " + message)}{(isError ? " (problem)" : "")}");
         SyncStatus status;
         lock (_gate)
         {

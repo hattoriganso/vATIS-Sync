@@ -1,8 +1,9 @@
 # Approving changes
 
 Once you are connected to an ATIS, a change to its text reaches the pilots at once. A runway change is the one that
-matters most: a pilot told "runway 26" a minute ago, and then "runway 8", has been caught out. So before a refresh
-changes a connected ATIS, the app can show you exactly what would change and wait for your decision.
+matters most: a pilot told "runway 26" a minute ago, and then "runway 8", has been caught out. So when a refresh would
+change the runways or approaches of a connected ATIS, the app shows you exactly what would change and waits for your
+decision. It asks about nothing else: weather, a closed taxiway or a new NOTAM never raises a question.
 
 - [When you are asked](#when-you-are-asked)
 - [The window](#the-window)
@@ -20,8 +21,10 @@ Set it under **Settings**, in **Changes to a connected ATIS**:
 | Setting | You are asked when |
 |---|---|
 | **Ask me when the runways change** (the default) | The runways or the approach types in the text change. |
-| **Ask me before any change** | The Airport Conditions text would change in any way, even a closed taxiway. |
-| **Apply changes automatically** | Never. Every refresh is written without asking. |
+| **Apply runway changes automatically** | Never. Every refresh is written without asking. |
+
+An older version also had "Ask me before any change". It was removed; a settings file that still says so is read as
+the default.
 
 While the question is open the sync waits, and the Overview says `Waiting for your approval (KPHX)`. A tray
 notification also tells you a question is waiting. Other airports are not updated until you answer.
@@ -34,14 +37,15 @@ they are always synced together or not at all, so the answer covers every statio
 
 The window is titled `Approve ATIS change - KPHX` and stays on top of other windows. It does not block the app.
 
-- **Headline.** `KPHX: runways changed` when the runways or approaches differ, with a line under it that says how
-  (`From runways 26; ILS 26 to runways 8; ILS 8.`). Otherwise `KPHX: the ATIS text changed`, with no second line.
+- **Headline.** `KPHX: runways changed`, with a line under it that says how
+  (`From runways 26; ILS 26 to runways 8; ILS 8.`).
 - **Two panes.** **Now in vATIS** on the left, and **New (from the real-world D-ATIS)** on the right. The words that
   differ are highlighted, red on the left and green on the right, and a run of changed words is highlighted as one
   phrase.
 - **More than one station.** When several stations of the airport would change, each gets its own pair of
   panes, one under the other, headed by its name and what changed (`KPHX_A: from runways 26; ILS 26 to runways 8;
-  ILS 8`). The window scrolls if they do not all fit.
+  ILS 8`, or `KPHX_D: the ATIS text changed` for a station whose runways stay the same). The window scrolls if they
+  do not all fit.
 
 ## The three choices
 
@@ -60,7 +64,7 @@ change must never reach a connected ATIS without you having seen it.
 The session button works for one airport only. Other airports still ask. An airport you disregarded for the session is
 left alone for any change that would have asked you, so use it for an airport you are happy to leave as it is, and
 restart the sync when you want it to follow the real world again. Changes that would not have asked still go through
-as usual (a taxiway change in the default setting, say).
+as usual (a taxiway change, say).
 
 ## One airport, one answer
 
@@ -68,8 +72,8 @@ The stations of an airport are never out of step with each other: either all of 
 ATIS, or none are. Two stations of one airport that told pilots different runways would be worse than either one alone.
 So:
 
-- **One question per airport**, however many of its stations changed. It is asked when a connected station would
-  change in a way that needs approval (the runways, or anything, by your setting), and it lists every station of the
+- **One question per airport**, however many of its stations changed. It is asked when a connected station's
+  runways or approaches would change, and it lists every station of the
   airport that would change, even one whose own change is harmless, because all of them are applied or held together.
 - **Apply writes every station** of the airport, connected or not.
 - **Disregard holds every station**, connected or not. That includes a station whose own change was harmless: if the
@@ -110,5 +114,7 @@ instructions or a crane does not, so mentioning a closed runway is not taken as 
 - **The first fill after you press Start.** You asked for it by pressing Start.
 - **An ATIS that is not connected.** Nothing is live, so there is nothing to protect. It is updated freely.
 - **A station with no text in vATIS yet.** There is nothing to compare against. (Its airport's other stations may still ask.)
+- **A change that is not a runway change**, however large: new weather, a closed taxiway, a new NOTAM. Those are
+  written as usual.
 - **A refresh that changes nothing.**
 - **A change you already disregarded.** The same real-world text does not ask again. New text does.

@@ -9,7 +9,7 @@ namespace VatisSync.Services;
 /// ATIS syncing in progress. Instead the full details go to the error log and the user sees a message in the bar.
 /// Errors that the runtime is going to terminate the app over anyway are still written to the log first.
 /// </summary>
-public sealed class SafetyNet(Application app, ErrorLog log, Func<MainViewModel?> viewModel)
+public sealed class SafetyNet(Application app, ErrorLog log, Func<MainViewModel?> viewModel, ActivityLog? activity = null)
 {
     public void Install()
     {
@@ -25,7 +25,11 @@ public sealed class SafetyNet(Application app, ErrorLog log, Func<MainViewModel?
         };
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
-            if (args.ExceptionObject is Exception ex) log.Write(ex, "fatal, app closing");
+            if (args.ExceptionObject is Exception ex)
+            {
+                log.Write(ex, "fatal, app closing");
+                activity?.Write(ex, "fatal, app closing");
+            }
         };
     }
 

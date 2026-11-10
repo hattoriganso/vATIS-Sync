@@ -30,7 +30,8 @@ public sealed record VatisAtisState(string NetworkConnectionStatus, string Airpo
 /// Talks to vATIS's local websocket API. Like the original script, each request uses its own short-lived
 /// connection (some calls are fire-and-forget, and connectAtis may not reply at all).
 /// </summary>
-public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
+/// <param name="trace">Told every message sent to and received from vATIS, as it happens, for the activity log.</param>
+public sealed class VatisClient(IVatisSocketFactory factory, Action<string>? trace = null) : IVatisClient
 {
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(1);
 
@@ -41,6 +42,7 @@ public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
     public async Task<bool> WaitUntilReadyAsync(TimeSpan limit, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
+        string? lastFailure = null;
         while (sw.Elapsed < limit)
         {
             ct.ThrowIfCancellationRequested();
@@ -52,7 +54,10 @@ public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // vATIS not listening yet
+                // vATIS not listening yet. Said once per kind of failure, not every half second.
+                var failure = $"{ex.GetType().Name}: {ex.Message}";
+                if (failure != lastFailure) trace?.Invoke($"vATIS not ready yet ({failure}); retrying every 500 ms");
+                lastFailure = failure;
             }
             await Task.Delay(TimeSpan.FromMilliseconds(500), ct).ConfigureAwait(false);
         }
@@ -156,10 +161,13 @@ public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
         try
         {
             await using var socket = await factory.ConnectAsync(ct).ConfigureAwait(false);
-            await socket.SendAsync(JsonSerializer.Serialize(request), ct).ConfigureAwait(false);
+            var json = JsonSerializer.Serialize(request);
+            trace?.Invoke($"-> vATIS (no reply expected) {json}");
+            await socket.SendAsync(json, ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            trace?.Invoke($"vATIS send failed: {ex.GetType().Name}: {ex.Message}");
             throw new VatisUnavailableException("Could not reach vATIS.", ex);
         }
     }
@@ -173,6 +181,7 @@ public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not VatisUnavailableException)
         {
+            trace?.Invoke($"vATIS request failed: {ex.GetType().Name}: {ex.Message}");
             throw new VatisUnavailableException("Could not reach vATIS.", ex);
         }
     }
@@ -182,18 +191,31 @@ public sealed class VatisClient(IVatisSocketFactory factory) : IVatisClient
         object request, Func<JsonNode, bool> accept, TimeSpan timeout, CancellationToken ct)
     {
         await using var socket = await factory.ConnectAsync(ct).ConfigureAwait(false);
-        await socket.SendAsync(JsonSerializer.Serialize(request), ct).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(request);
+        trace?.Invoke($"-> vATIS {json}");
+        await socket.SendAsync(json, ct).ConfigureAwait(false);
 
         var sw = Stopwatch.StartNew();
         while (sw.Elapsed < timeout)
         {
             var text = await socket.ReceiveAsync(timeout - sw.Elapsed, ct).ConfigureAwait(false);
-            if (text is null) return null;
+            if (text is null)
+            {
+                trace?.Invoke($"<- vATIS (nothing more within {timeout.TotalMilliseconds:0} ms)");
+                return null;
+            }
             JsonNode? node;
             try { node = JsonNode.Parse(text); }
-            catch (JsonException) { continue; }
-            if (node is JsonObject && accept(node)) return node;
+            catch (JsonException)
+            {
+                trace?.Invoke($"<- vATIS (not JSON, ignored) {text}");
+                continue;
+            }
+            var accepted = node is JsonObject && accept(node);
+            trace?.Invoke($"<- vATIS{(accepted ? "" : " (not the reply asked for, skipped)")} {text}");
+            if (accepted) return node;
         }
+        trace?.Invoke($"<- vATIS (no matching reply within {timeout.TotalMilliseconds:0} ms)");
         return null;
     }
 }
