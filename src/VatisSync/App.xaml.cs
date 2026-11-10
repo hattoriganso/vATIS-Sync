@@ -45,7 +45,7 @@ public partial class App : Application
 
         var approver = new WpfUpdateApprover();
         approver.Asked = request => _tray?.ShowNotification("ATIS change needs your approval",
-            $"{request.Station}: {request.Summary}");
+            $"{request.Airport}: {request.Summary}");
         _vm = new MainViewModel(
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
             approver: approver);

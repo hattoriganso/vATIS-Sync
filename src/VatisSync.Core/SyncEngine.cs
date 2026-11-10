@@ -21,8 +21,8 @@ public sealed class SyncEngine(
     private readonly object _gate = new();
     private readonly Dictionary<string, StationStatus> _stations = [];
 
-    // Per sync session: text the controller declined (so it is not asked about again) and stations
-    // they chose to stop being asked about (their ATIS is left alone until the sync restarts).
+    // Per sync session, by airport (an airport's stations are synced together or not at all): text the controller
+    // declined (so it is not asked about again) and airports they chose to stop being asked about.
     private readonly Dictionary<string, string> _declined = [];
     private readonly HashSet<string> _mutedForSession = [];
 
@@ -172,6 +172,9 @@ public sealed class SyncEngine(
             Info(Messages.Get(fetch.FromCache ? Msg.EngineDatisFailedCached : Msg.EngineDatisFailedNone, new { reason = fetch.Error }), LogKind.Warning);
         var now = _time.GetUtcNow();
 
+        // First work out what every station would get, then decide per airport, then write: an airport's
+        // stations are written together or not at all.
+        var planned = new List<Planned>();
         foreach (var s in stations)
         {
             var state = await client.GetAtisAsync(s.Id, ct).ConfigureAwait(false);
@@ -196,8 +199,21 @@ public sealed class SyncEngine(
                 continue;
             }
 
-            if (connectedOnly && state.IsConnected &&
-                !await ApprovedAsync(s.Key, state, text, ct).ConfigureAwait(false))
+            planned.Add(new Planned(s, state, text));
+        }
+
+        // Refreshes only: the startup pass is something the controller asked for by pressing Start.
+        var held = new HashSet<string>();
+        if (connectedOnly)
+        {
+            foreach (var group in planned.GroupBy(p => AirportOf(p.Station.Key)))
+                if (!await ApprovedAsync(group.Key, group.ToList(), ct).ConfigureAwait(false))
+                    held.Add(group.Key);
+        }
+
+        foreach (var (s, state, text) in planned)
+        {
+            if (held.Contains(AirportOf(s.Key)))
             {
                 Record(s.Key, state.IsConnected, text.IsAvailable);
                 continue;
@@ -223,32 +239,48 @@ public sealed class SyncEngine(
 
     // ---- approval ----
 
+    private sealed record Planned(VatisStation Station, VatisAtisState State, FormattedAtis Text);
+
+    /// <summary>The airport a station belongs to: the first four letters of its key (KMIA_A and KMIA_D are both KMIA).</summary>
+    private static string AirportOf(string stationKey) => stationKey[..4].ToUpperInvariant();
+
     /// <summary>
-    /// Decides whether a refresh may be written to a connected station. Only refreshes are checked: the
-    /// startup pass is something the controller asked for by pressing Start.
+    /// Decides whether a refresh may be written to an airport. An airport's stations are synced together or not at all,
+    /// so this is one decision for all of them, connected or not: if any connected station would change in a way that
+    /// needs approval, the controller is asked once, and the answer covers the whole airport. Only refreshes are checked.
     /// </summary>
-    private async Task<bool> ApprovedAsync(string key, VatisAtisState state, FormattedAtis text, CancellationToken ct)
+    private async Task<bool> ApprovedAsync(string key, List<Planned> airport, CancellationToken ct)
     {
         if (options.Approval == ApprovalMode.Never || approver is null) return true;
 
-        var current = state.AirportConditions.Trim();
-        var updated = text.AirportConditions.Trim();
-        if (current.Length == 0 || current == updated)
+        // What triggers the question: a connected station whose change needs approval (any change, or a runway change,
+        // by the setting). What the question shows: every station of the airport that would change, since all of
+        // them are applied or held together.
+        var asks = false;
+        var changes = new List<StationChange>();
+        var fingerprints = new List<string>();
+        foreach (var (station, state, text) in airport.OrderBy(p => p.Station.Key, StringComparer.Ordinal))
         {
-            _declined.Remove(key); // vATIS and the real world agree again
-            return true; // nothing live to protect / nothing changes
+            var current = state.AirportConditions.Trim();
+            var updated = text.AirportConditions.Trim();
+            if (current.Length == 0 || current == updated) continue; // nothing live to protect / nothing changes
+
+            var flowChanged = FlowAnalyzer.FlowChanged(current, updated);
+            if (state.IsConnected && (options.Approval == ApprovalMode.Always || flowChanged)) asks = true;
+
+            changes.Add(new StationChange(station.Key, current, updated, flowChanged,
+                FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated)));
+            fingerprints.Add(station.Key + "|" + updated + "|" + text.Notams.Trim());
         }
 
-        var flowChanged = FlowAnalyzer.FlowChanged(current, updated);
-        if (options.Approval == ApprovalMode.RunwayChanges && !flowChanged)
+        if (!asks)
         {
-            _declined.Remove(key);
+            _declined.Remove(key); // nothing needs approval, or vATIS and the real world agree again
             return true;
         }
 
-        var fingerprint = updated + "|" + text.Notams.Trim();
-        var request = new ApprovalRequest(key, current, updated, flowChanged,
-            FlowAnalyzer.Analyze(current), FlowAnalyzer.Analyze(updated));
+        var fingerprint = string.Join("\n", fingerprints);
+        var request = new ApprovalRequest(key, changes);
 
         // Disregarded for the session: this is a change that would have asked, so it is not applied, but it is
         // written to the Log (once per new text) so the controller is never unaware that vATIS has fallen behind.
@@ -384,7 +416,7 @@ public sealed class SyncEngine(
                 key, connected, available ?? prev?.DatisAvailable ?? false, configuredAt ?? prev?.LastConfiguredAt)
             {
                 // True only while a disregarded change is pending: it clears itself once vATIS matches the real world again.
-                Desynced = _declined.ContainsKey(key),
+                Desynced = _declined.ContainsKey(AirportOf(key)),
             };
         }
         Publish(_status.Phase, _status.Message, _status.LastSync, _status.NextSync, _status.IsError);

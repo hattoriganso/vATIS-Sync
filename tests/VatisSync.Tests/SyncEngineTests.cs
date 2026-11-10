@@ -205,6 +205,28 @@ public class SyncEngineTests
         await WaitIdle(r);
     }
 
+    // An airport with an arrival and a departure station (KSFO_A, KSFO_D), both connected.
+    private static DatisEntry ConditionsOf(string icao, string type, string conditions) =>
+        Conditions(icao, conditions) with { Type = type };
+
+    private static async Task StartedWithBoth(Rig r, string arrival, string departure)
+    {
+        r.Vatis.Add("KSFO", "Arrival");
+        r.Vatis.Add("KSFO", "Departure");
+        r.Datis.Entries = [ConditionsOf("KSFO", "arr", arrival), ConditionsOf("KSFO", "dep", departure)];
+        r.Engine.Start();
+        await WaitIdle(r);
+    }
+
+    private static void BothNow(Rig r, string arrival, string departure) =>
+        r.Datis.Entries = [ConditionsOf("KSFO", "arr", arrival), ConditionsOf("KSFO", "dep", departure)];
+
+    private static Task WaitForBoth(Rig r, string text) =>
+        WaitFor(() => r.Vatis.StateOf("KSFO_A").Conditions.Contains(text) && r.Vatis.StateOf("KSFO_D").Conditions.Contains(text),
+            $"{text} to reach both stations");
+
+    private static bool Desynced(Rig r, string key) => r.Engine.Status.Stations.Single(s => s.Key == key).Desynced;
+
     private static Task WaitForText(Rig r, string text) =>
         WaitFor(() => r.Vatis.StateOf("KSFO").Conditions.Contains(text), $"{text} to reach vATIS");
 
@@ -234,12 +256,14 @@ public class SyncEngineTests
         await r.Engine.StopAsync();
 
         var request = Assert.Single(approver.Requests);
-        Assert.Equal("KSFO", request.Station);
+        Assert.Equal("KSFO", request.Airport);
         Assert.True(request.FlowChanged);
-        Assert.Contains("28R", request.CurrentFlow.Runways);
-        Assert.Contains("10L", request.NewFlow.Runways);
-        Assert.Contains("ILS RWY 28R", request.CurrentConditions);
-        Assert.Contains("ILS RWY 10L", request.NewConditions);
+        var change = Assert.Single(request.Changes);
+        Assert.Equal("KSFO", change.Station);
+        Assert.Contains("28R", change.CurrentFlow.Runways);
+        Assert.Contains("10L", change.NewFlow.Runways);
+        Assert.Contains("ILS RWY 28R", change.CurrentConditions);
+        Assert.Contains("ILS RWY 10L", change.NewConditions);
     }
 
     [Fact]
@@ -298,6 +322,96 @@ public class SyncEngineTests
 
         Assert.Single(approver.Requests);
         Assert.False(r.Engine.Status.Stations.Single(s => s.Key.StartsWith("KSFO")).Desynced);
+    }
+
+    [Fact]
+    public async Task An_airport_with_two_stations_is_asked_once_and_Apply_writes_both()
+    {
+        var approver = new FakeApprover();
+        var r = ApprovalRig(approver);
+        await StartedWithBoth(r, "ILS RWY 28R IN USE.", "DEPG RWY 28L.");
+
+        BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 10R.");
+        await WaitForBoth(r, "RWY 10");
+        await r.Engine.StopAsync();
+
+        var request = Assert.Single(approver.Requests);
+        Assert.Equal("KSFO", request.Airport);
+        Assert.Equal(["KSFO_A", "KSFO_D"], request.Changes.Select(c => c.Station).Order());
+    }
+
+    [Fact]
+    public async Task Disregard_holds_every_station_of_the_airport_and_marks_them_all_desynced()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        await StartedWithBoth(r, "ILS RWY 28R IN USE.", "DEPG RWY 28L.");
+
+        BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 10R.");
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await WaitFor(() => Desynced(r, "KSFO_A") && Desynced(r, "KSFO_D"), "both stations desynced");
+        await Task.Delay(300); // several more refresh cycles at 40 ms
+        await r.Engine.StopAsync();
+
+        Assert.Single(approver.Requests);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO_A").Conditions);
+        Assert.Contains("RWY 28L", r.Vatis.StateOf("KSFO_D").Conditions);
+    }
+
+    [Fact]
+    public async Task A_harmless_change_on_one_station_is_shown_and_held_with_the_airport_when_the_other_needs_approval()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        await StartedWithBoth(r, "ILS RWY 28R IN USE.", "DEPG RWY 28L. TWY B CLSD.");
+
+        // The arrival's runways change; the departure only gets a different taxiway closure.
+        BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 28L. TWY D CLSD.");
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await Task.Delay(300);
+        await r.Engine.StopAsync();
+
+        var request = Assert.Single(approver.Requests);
+        Assert.Equal(["KSFO_A", "KSFO_D"], request.Changes.Select(c => c.Station)); // both are shown, since both are held
+        Assert.True(request.Changes[0].FlowChanged);
+        Assert.False(request.Changes[1].FlowChanged);
+        Assert.Contains("TWY B CLSD", r.Vatis.StateOf("KSFO_D").Conditions); // and the airport is held as a whole
+        Assert.True(Desynced(r, "KSFO_D"));
+    }
+
+    [Fact]
+    public async Task A_station_that_is_not_connected_is_held_with_its_airport()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
+        var r = ApprovalRig(approver);
+        await StartedWithBoth(r, "ILS RWY 28R IN USE.", "DEPG RWY 28L.");
+        r.Vatis.Edit("KSFO_D", s => s.Status = "Disconnected");
+
+        BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 10R.");
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        await Task.Delay(300);
+        await r.Engine.StopAsync();
+
+        Assert.Equal(["KSFO_A", "KSFO_D"], Assert.Single(approver.Requests).Changes.Select(c => c.Station));
+        Assert.Contains("RWY 28L", r.Vatis.StateOf("KSFO_D").Conditions); // not connected, but not written either
+    }
+
+    [Fact]
+    public async Task Disregard_for_session_covers_the_other_station_of_the_airport_too()
+    {
+        var approver = new FakeApprover(_ => ApprovalDecision.DisregardForSession);
+        var r = ApprovalRig(approver);
+        await StartedWithBoth(r, "ILS RWY 28R IN USE.", "DEPG RWY 28L.");
+
+        BothNow(r, "ILS RWY 10L IN USE.", "DEPG RWY 10R.");
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        BothNow(r, "ILS RWY 1 IN USE.", "DEPG RWY 1R."); // new text for both, still disregarded
+        await Task.Delay(300);
+        await r.Engine.StopAsync();
+
+        Assert.Single(approver.Requests); // neither station asked again
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO_A").Conditions);
+        Assert.Contains("RWY 28L", r.Vatis.StateOf("KSFO_D").Conditions);
     }
 
     [Fact]
