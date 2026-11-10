@@ -159,7 +159,14 @@ public sealed class SyncEngine(
         // Only the fill that follows Start is written unchecked. When the engine starts over by itself (vATIS missed
         // a reply, or was restarted), a station that is still connected is live, so it is checked like any refresh.
         var ask = _startFillDone;
-        if (ask) Diag("starting over without a new Start: connected stations are checked before anything is written");
+        if (ask)
+        {
+            Diag("starting over without a new Start: connected stations are checked before anything is written");
+            // The same goes for the ATIS letter: a station that is still connected keeps the one it has, which the
+            // controller may have advanced by hand. Only a station connected from here on gets the real-world letter.
+            foreach (var (station, state) in await StatesAsync(ct).ConfigureAwait(false))
+                if (state.IsConnected) letters.MarkSynced(station.Key);
+        }
         Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineLoading));
         await ConfigureAllAsync(connectedOnly: false, ask, removals: null, letters, ct).ConfigureAwait(false);
         _startFillDone = true;

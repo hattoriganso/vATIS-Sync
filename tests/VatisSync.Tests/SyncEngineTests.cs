@@ -1109,6 +1109,47 @@ public class SyncEngineTests
     }
 
     [Fact]
+    public async Task A_hiccup_does_not_sync_the_letter_of_a_station_that_is_still_connected()
+    {
+        var r = new Rig(Rig.Fast() with { Interval = TimeSpan.FromMilliseconds(40) });
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [Entry("KSFO")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+        Assert.Single(r.Vatis.Configures("KSFO"), c => c.Sync); // the letter is set once, after Start
+
+        // vATIS stops answering for a moment but KSFO stays connected; the engine starts over by itself.
+        r.Vatis.Down = true;
+        await WaitFor(() => r.Engine.Status.Phase == SyncPhase.WaitingForVatis, "noticing vATIS is gone");
+        var before = r.Vatis.Configures("KSFO").Count;
+        r.Vatis.Down = false;
+        await WaitFor(() => r.Vatis.Configures("KSFO").Count >= before + 3, "writing again after the hiccup");
+        await r.Engine.StopAsync();
+
+        Assert.Single(r.Vatis.Configures("KSFO"), c => c.Sync); // still only the one from Start
+    }
+
+    [Fact]
+    public async Task A_station_reconnected_after_vatis_restarts_gets_its_letter_again()
+    {
+        var r = new Rig(Rig.Fast() with { Interval = TimeSpan.FromMilliseconds(40) });
+        r.Vatis.Add("KSFO");
+        r.Datis.Entries = [Entry("KSFO")];
+
+        r.Engine.Start();
+        await WaitIdle(r);
+
+        r.Vatis.Down = true;
+        await WaitFor(() => r.Engine.Status.Phase == SyncPhase.WaitingForVatis, "noticing vATIS is gone");
+        r.Vatis.Edit("KSFO", s => s.Status = "Disconnected"); // a restarted vATIS starts disconnected
+        r.Vatis.Down = false;
+
+        await WaitFor(() => r.Vatis.Configures("KSFO").Count(c => c.Sync) == 2, "the letter after reconnecting");
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
     public async Task Launches_vatis_when_asked_and_not_when_disabled()
     {
         var on = new Rig();
