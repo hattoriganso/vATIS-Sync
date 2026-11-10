@@ -56,6 +56,7 @@ public static class Msg
     public static readonly MessageKey AirportStale = new("airport.stale");
     public static readonly MessageKey AirportDesynced = new("airport.desynced");
     public static readonly MessageKey AirportNoDatis = new("airport.no-datis");
+    public static readonly MessageKey AirportReview = new("airport.review");
 
     // Status line
     public static readonly MessageKey StatusStoppedHeadline = new("status.stopped.headline");
@@ -81,7 +82,7 @@ public static class Msg
     public static readonly MessageKey EngineVatisNotFound = new("engine.vatis-not-found");
     public static readonly MessageKey EngineDatisFailedCached = new("engine.datis-failed-cached", "reason");
     public static readonly MessageKey EngineDatisFailedNone = new("engine.datis-failed-none", "reason");
-    public static readonly MessageKey EngineWaitingApproval = new("engine.waiting-approval", "station");
+    public static readonly MessageKey EngineReviewWaiting = new("engine.review-waiting", "station", "summary");
     public static readonly MessageKey EngineApprovalKept = new("engine.approval-kept", "station", "summary");
     public static readonly MessageKey EngineApprovalApplied = new("engine.approval-applied", "station", "summary");
     public static readonly MessageKey LogFolderOpenFailed = new("log.folder-open-failed", "path", "reason");

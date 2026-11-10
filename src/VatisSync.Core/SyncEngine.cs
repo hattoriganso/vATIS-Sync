@@ -28,6 +28,12 @@ public sealed class SyncEngine(
     private TaskCompletionSource _wake = NewWake();
     private readonly HashSet<string> _mutedForSession = [];
 
+    // Runway changes waiting for the controller, by airport. The sync does not stop for them: it holds that airport, goes on
+    // with the others, and is woken as soon as one is answered.
+    private sealed record Review(string Fingerprint, CancellationTokenSource Cts, Task<ApprovalDecision> Answer);
+    private readonly Dictionary<string, Review> _reviews = [];
+    private volatile bool _reviewAnswered;
+
     // The fill the controller asked for by pressing Start has been done. From then on nothing reaches a connected
     // ATIS unchecked, including when the engine starts over by itself because vATIS stopped answering.
     private bool _startFillDone;
@@ -95,6 +101,7 @@ public sealed class SyncEngine(
     {
         _declined.Clear();
         _mutedForSession.Clear();
+        CancelReviews();
         _startFillDone = false;
         try
         {
@@ -189,11 +196,12 @@ public sealed class SyncEngine(
             // Wait for the next refresh, or for a Resync request, which does not wait. The wake-up is created before
             // the queue is checked so a request made at any moment is seen by one or the other.
             var wake = _wake = NewWake();
-            if (_resyncs.IsEmpty)
+            if (_resyncs.IsEmpty && !_reviewAnswered)
             {
                 await Task.WhenAny(Task.Delay(options.Interval, ct), wake.Task).ConfigureAwait(false);
                 ct.ThrowIfCancellationRequested();
             }
+            _reviewAnswered = false; // an answer that comes from here on is seen by this refresh or by the next
             while (_resyncs.TryDequeue(out var airport))
             {
                 _mutedForSession.Remove(airport);
@@ -323,6 +331,7 @@ public sealed class SyncEngine(
     {
         if (options.Approval == ApprovalMode.Never || approver is null)
         {
+            CancelReview(key);
             Diag($"{key}: approval off ({(approver is null ? "no approver" : "setting")}), writing without asking");
             return true;
         }
@@ -349,6 +358,7 @@ public sealed class SyncEngine(
 
         if (!asks)
         {
+            CancelReview(key); // the real world no longer differs in a way that needs a decision
             _declined.Remove(key); // nothing needs approval, or vATIS and the real world agree again
             Diag($"{key}: no runway change on a connected station ({changes.Count} station(s) differ in other ways), writing without asking");
             return true;
@@ -361,6 +371,7 @@ public sealed class SyncEngine(
         // written to the Log (once per new text) so the controller is never unaware that vATIS has fallen behind.
         if (_mutedForSession.Contains(key))
         {
+            CancelReview(key);
             Diag($"{key}: runway change, but the airport is disregarded for the session; not applied");
             if (!_declined.TryGetValue(key, out var noted) || noted != fingerprint)
             {
@@ -373,13 +384,47 @@ public sealed class SyncEngine(
         // Declined before and the real-world text has not moved since: stay quiet and keep the current text.
         if (_declined.TryGetValue(key, out var seen) && seen == fingerprint)
         {
+            CancelReview(key);
             Diag($"{key}: runway change already disregarded and the real-world text has not moved; not asking again");
             return false;
         }
 
-        Diag($"{key}: runway change, asking the controller. {request.Summary}");
-        Publish(SyncPhase.Syncing, Messages.Get(Msg.EngineWaitingApproval, new { station = key }));
-        var decision = await approver.RequestAsync(request, ct).ConfigureAwait(false);
+        // Waiting for an answer already? If the real-world text has moved on since, that question is out of date.
+        if (_reviews.TryGetValue(key, out var review))
+        {
+            if (review.Fingerprint != fingerprint)
+            {
+                Diag($"{key}: the real-world text moved on while the change waited for review; asking again");
+                CancelReview(key);
+                review = null;
+            }
+            else if (review.Answer.IsCanceled)
+            {
+                _reviews.Remove(key);
+                review.Cts.Dispose();
+                review = null;
+            }
+        }
+
+        if (review is null)
+        {
+            Diag($"{key}: runway change, asking the controller. {request.Summary}");
+            Info(Messages.Get(Msg.EngineReviewWaiting, new { station = key, summary = request.FlowSummary }), LogKind.Warning);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            review = new Review(fingerprint, cts, approver.RequestAsync(request, cts.Token));
+            _reviews[key] = review;
+            _ = review.Answer.ContinueWith(_ => ReviewAnswered(), TaskScheduler.Default);
+        }
+
+        if (!review.Answer.IsCompleted)
+        {
+            Diag($"{key}: still waiting for the controller; nothing written for this airport");
+            return false;
+        }
+
+        _reviews.Remove(key);
+        review.Cts.Dispose();
+        var decision = await review.Answer.ConfigureAwait(false);
         Diag($"{key}: controller chose {decision}");
 
         switch (decision)
@@ -490,13 +535,34 @@ public sealed class SyncEngine(
     }
 
     /// <summary>Nothing disregarded carries over once the sync stops: the next start asks afresh.</summary>
+    /// <summary>Withdraws the question about an airport, if one is waiting.</summary>
+    private void CancelReview(string key)
+    {
+        if (!_reviews.Remove(key, out var review)) return;
+        review.Cts.Cancel();
+        review.Cts.Dispose();
+    }
+
+    private void CancelReviews()
+    {
+        foreach (var key in _reviews.Keys.ToList()) CancelReview(key);
+    }
+
+    /// <summary>The controller answered: refresh now rather than at the next interval, so Apply is not a wait.</summary>
+    private void ReviewAnswered()
+    {
+        _reviewAnswered = true;
+        _wake.TrySetResult();
+    }
+
     private void ClearPending()
     {
+        CancelReviews();
         _declined.Clear();
         _mutedForSession.Clear();
         _resyncs.Clear();
         lock (_gate)
-            foreach (var key in _stations.Keys.ToList()) _stations[key] = _stations[key] with { Desynced = false };
+            foreach (var key in _stations.Keys.ToList()) _stations[key] = _stations[key] with { Desynced = false, AwaitingReview = false };
     }
 
     private void Record(string key, bool connected, bool? available, DateTimeOffset? configuredAt = null)
@@ -509,6 +575,7 @@ public sealed class SyncEngine(
             {
                 // True only while a disregarded change is pending: it clears itself once vATIS matches the real world again.
                 Desynced = _declined.ContainsKey(AirportOf(key)),
+                AwaitingReview = _reviews.ContainsKey(AirportOf(key)),
             };
         }
         Publish(_status.Phase, _status.Message, _status.LastSync, _status.NextSync, _status.IsError);

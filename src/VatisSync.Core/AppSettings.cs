@@ -27,6 +27,9 @@ public sealed record AppSettings
     /// <summary>When to ask the controller before a change reaches a connected ATIS.</summary>
     public ApprovalMode Approval { get; init; } = ApprovalMode.RunwayChanges;
 
+    /// <summary>A soft sound when a change starts waiting for the controller's review. Off by default: many will not want it.</summary>
+    public bool ReviewSound { get; init; }
+
     /// <summary>Light, dark, or follow Windows (the default). Windows High Contrast overrides all three.</summary>
     public ThemePreference Theme { get; init; } = ThemePreference.System;
 

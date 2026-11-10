@@ -52,6 +52,10 @@
                                       MinWidth="280" AutomationProperties.Name="When to ask before changing the ATIS"/>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
                                        Text="When a refresh would change the runways or approaches of an ATIS you are connected to, you see what would change and decide. You are not asked about anything else, and the first fill after you press Start never asks."/>
+                            <CheckBox IsChecked="{Binding ReviewSound}" Margin="0,10,0,0"
+                                      Content="Play a soft sound when a change is waiting for my review"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,0"
+                                       Text="A small strip appears in the corner of the screen and never takes the keyboard, so nothing you type can answer it. Click Review when you are ready. The sound is off by default."/>
                         </StackPanel>
 
                         <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderSubtle}" Margin="0,18,0,0"/>

@@ -302,6 +302,11 @@
                                                         <DataTrigger Binding="{Binding Status}" Value="Stale">
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Review">
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="ToolTip" Value="A runway change is waiting for your review. Nothing has been written for this airport."/>
+                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding Status}" Value="Desynced">
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -476,6 +481,10 @@
                                                         <DataTrigger Binding="{Binding NeedsAttention}" Value="True">
                                                             <Setter Property="Foreground" Value="{DynamicResource WarningText}"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding NeedsReview}" Value="True">
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="ToolTip" Value="A runway change is waiting for your review. Nothing has been written for this airport."/>
+                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding Desynced}" Value="True">
                                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                                             <Setter Property="ToolTip" Value="You disregarded a change, so vATIS differs from the real-world ATIS. Resync is on the airport's page."/>
@@ -584,6 +593,19 @@
                             <DockPanel>
                                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding Icao}" FontSize="22" FontWeight="SemiBold"/>
+                                    <!-- A runway change is waiting for the controller. Nothing is written for this airport until they decide. -->
+                                    <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
+                                            Visibility="{Binding IsAwaitingReview, Converter={StaticResource BoolToVisibility}}">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="Review" Padding="14,4" Margin="12,0,0,0" VerticalAlignment="Center"
+                                                    Style="{StaticResource PrimaryButton}"
+                                                    Command="{Binding DataContext.ReviewAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="Review the runway change waiting for this airport"/>
+                                            <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextStrong}"
+                                                       Text="A runway change is waiting for your review. Nothing is written for this airport until you decide; the other airports carry on."/>
+                                        </DockPanel>
+                                    </Border>
                                     <!-- A change was disregarded: vATIS differs from the real-world ATIS until the controller resyncs -->
                                     <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
                                             Visibility="{Binding IsDesynced, Converter={StaticResource BoolToVisibility}}">

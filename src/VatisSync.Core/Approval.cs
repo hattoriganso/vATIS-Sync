@@ -71,11 +71,18 @@ public sealed record ApprovalRequest(string Airport, IReadOnlyList<StationChange
     public string Summary => Changes.Count == 1
         ? Changes[0].Summary
         : string.Join(" ", Changes.Select(c => $"{c.Station}: {c.Summary}"));
+
+    /// <summary>The runway change itself, for one short line: the first station whose runways or approaches change.</summary>
+    public string FlowSummary => (Changes.FirstOrDefault(c => c.FlowChanged) ?? Changes[0]).Summary;
 }
 
 /// <summary>Asks the controller whether a pending update may go out. Implemented by the UI.</summary>
 public interface IUpdateApprover
 {
-    /// <summary>Completes when the controller decides. Must honour cancellation (the sync is being stopped).</summary>
+    /// <summary>
+    /// Completes when the controller decides, which may be a long time: the sync does not wait for it, it holds that airport
+    /// and goes on with the others. Must honour cancellation, which is how the sync withdraws a question that no longer
+    /// applies (the real-world text moved on, or it is being stopped).
+    /// </summary>
     Task<ApprovalDecision> RequestAsync(ApprovalRequest request, CancellationToken ct);
 }

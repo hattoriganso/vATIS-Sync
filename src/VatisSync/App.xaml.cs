@@ -18,6 +18,7 @@ public partial class App : Application
     private TaskbarIcon? _tray;
     private MainWindow? _window;
     private MainViewModel? _vm;
+    private ReviewPrompt? _prompt;
     private readonly ErrorLog _errorLog = new();
     private readonly ActivityLog _activity = new();
 
@@ -47,13 +48,17 @@ public partial class App : Application
         ListenForShowRequests();
         WriteStartupRecord();
 
-        var approver = new WpfUpdateApprover();
-        approver.Asked = request => _tray?.ShowNotification("ATIS change needs your approval",
-            $"{request.Airport}: {request.Summary}");
+        // A change waiting for review never opens a window by itself: a small strip appears in a corner and the
+        // comparison window opens when the controller clicks Review.
+        var reviews = new ReviewQueue();
+        reviews.Asked += request => Dispatcher.BeginInvoke(() => _tray?.ShowNotification("ATIS change waiting for your review",
+            $"{request.Airport}: {request.FlowSummary}"));
         _vm = new MainViewModel(
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
-            approver: approver,
+            approver: reviews,
             activityLog: _activity);
+        _prompt = new ReviewPrompt(reviews, () => _vm.ReviewSound);
+        _vm.ReviewRequested = _prompt.Review;
         _activity.TraceEnabled = _vm.DetailedLog;
 
         // The saved light / dark / follow-Windows choice, applied before the first window exists so nothing flashes the wrong colors.
@@ -92,11 +97,15 @@ public partial class App : Application
         var menu = new ContextMenu();
         var open = new MenuItem { Header = "Open vATIS-Sync" };
         open.Click += (_, _) => ShowWindow();
+        var review = new MenuItem { Header = "Review waiting changes" };
+        review.Click += (_, _) => _prompt?.ReviewNext();
+        menu.Opened += (_, _) => review.IsEnabled = _prompt?.HasWaiting == true;
         var toggle = new MenuItem { Header = "Start / Stop" };
         toggle.Click += (_, _) => _vm!.StartStopCommand.Execute(null);
         var exit = new MenuItem { Header = "Exit" };
         exit.Click += async (_, _) => await ExitAppAsync();
         menu.Items.Add(open);
+        menu.Items.Add(review);
         menu.Items.Add(toggle);
         menu.Items.Add(new Separator());
         menu.Items.Add(exit);

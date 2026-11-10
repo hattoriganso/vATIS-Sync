@@ -77,6 +77,9 @@
   // A station is connected, but there is no current real-world D-ATIS for it (shown over Connected).
   "airport.no-datis": "No D-ATIS",
 
+  // A runway change is waiting for your review: nothing has been written for this airport (shown over every other word).
+  "airport.review": "Needs review",
+
   // ---------------------------------------------------------------------------------------------------------------
   // The Summary tab of an airport: the D-ATIS text and where it comes from
   // ---------------------------------------------------------------------------------------------------------------
@@ -160,8 +163,8 @@
   "engine.datis-failed-cached": "Couldn't download D-ATIS ({reason}); using the last good copy.",
   "engine.datis-failed-none": "Couldn't download D-ATIS ({reason}); there is no copy to use.",
 
-  // Status line while the app waits for you to approve a change.   {station}
-  "engine.waiting-approval": "Waiting for your approval ({station})…",
+  // Log, when a runway change starts waiting for your review. The sync goes on with the other airports.   {station} {summary}
+  "engine.review-waiting": "{station}: a runway change is waiting for your review. {summary}",
 
   // Log, after you decide.   {station}, {summary} what would have changed
   "engine.approval-kept": "{station}: kept the current ATIS. {summary}",

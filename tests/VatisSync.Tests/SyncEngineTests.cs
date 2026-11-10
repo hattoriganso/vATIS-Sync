@@ -468,6 +468,124 @@ public class SyncEngineTests
         await r.Engine.StopAsync();
     }
 
+    // ---- a change waiting for review does not stop the sync ----
+
+    private static async Task StartedWithTwo(Rig r, string ksfo, string koak)
+    {
+        r.Vatis.Add("KSFO");
+        r.Vatis.Add("KOAK");
+        r.Datis.Entries = [Conditions("KSFO", ksfo), Conditions("KOAK", koak)];
+        r.Engine.Start();
+        await WaitIdle(r);
+    }
+
+    private static bool Awaiting(Rig r, string key) => r.Engine.Status.Stations.Single(s => s.Key == key).AwaitingReview;
+
+    [Fact]
+    public async Task An_airport_waiting_for_review_does_not_hold_up_the_others()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWithTwo(r, "ILS RWY 28R IN USE.", "ILS RWY 28R IN USE. TWY B CLSD.");
+
+        // KSFO changes runways and waits; KOAK only has a taxiway change.
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE."), Conditions("KOAK", "ILS RWY 28R IN USE. TWY D CLSD.")];
+        await WaitFor(() => r.Vatis.StateOf("KOAK").Conditions.Contains("TWY D CLSD"), "KOAK to be refreshed while KSFO waits");
+
+        Assert.Single(approver.Requests);                                 // asked once, not on every refresh
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions);   // nothing written for the airport waiting
+        Assert.True(Awaiting(r, "KSFO"));
+        Assert.False(Awaiting(r, "KOAK"));
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task A_second_airport_with_a_runway_change_waits_beside_the_first()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWithTwo(r, "ILS RWY 28R IN USE.", "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE."), Conditions("KOAK", "ILS RWY 10R IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 2, "both questions");
+        await Task.Delay(200);
+
+        Assert.Equal(["KOAK", "KSFO"], approver.Requests.Select(q => q.Airport).Order());
+        Assert.Equal(2, approver.Requests.Count); // still two, however many refreshes passed
+        Assert.True(Awaiting(r, "KSFO") && Awaiting(r, "KOAK"));
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task An_answer_given_later_is_applied_at_once_not_at_the_next_refresh()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = new Rig(Rig.Fast() with { Approval = ApprovalMode.RunwayChanges, Interval = TimeSpan.FromSeconds(30) }, approver: approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        r.Engine.Resync("KSFO"); // the next scheduled refresh is 30 s away
+        await WaitFor(() => approver.Requests.Count == 1, "the question", timeoutMs: 3000);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions);
+
+        approver.Block.SetResult(); // the controller answers Apply, a while later
+        await WaitFor(() => r.Vatis.StateOf("KSFO").Conditions.Contains("RWY 10L"), "Apply to take effect well before the 30 s refresh", timeoutMs: 3000);
+        Assert.False(Awaiting(r, "KSFO"));
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task A_question_is_withdrawn_and_asked_again_when_the_real_world_text_moves_on()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 1, "the first question");
+
+        // The real world moves again while the controller has not answered. What they were shown is out of date.
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")];
+        await WaitFor(() => approver.Requests.Count == 2, "a new question for the new text");
+        Assert.Contains("RWY 1 ", approver.Requests[1].Changes[0].NewConditions);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions);
+
+        // Only the newest question is still open: answering the first one (already withdrawn) changes nothing.
+        approver.Block.SetResult();
+        await WaitFor(() => r.Vatis.StateOf("KSFO").Conditions.Contains("RWY 1 "), "the newest text to be applied");
+        Assert.DoesNotContain("RWY 10L", r.Vatis.StateOf("KSFO").Conditions);
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task A_question_is_withdrawn_when_the_real_world_agrees_with_vatis_again()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => Awaiting(r, "KSFO"), "the airport to wait for review");
+
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 28R IN USE.")]; // back to what vATIS already has
+        await WaitFor(() => !Awaiting(r, "KSFO"), "the waiting to end by itself");
+        Assert.Single(approver.Requests);
+        await r.Engine.StopAsync();
+    }
+
+    [Fact]
+    public async Task Stopping_the_sync_withdraws_every_question()
+    {
+        var approver = new FakeApprover { Block = new TaskCompletionSource() };
+        var r = ApprovalRig(approver);
+        await StartedWith(r, "ILS RWY 28R IN USE.");
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
+        await WaitFor(() => Awaiting(r, "KSFO"), "the airport to wait for review");
+
+        await r.Engine.StopAsync();
+        Assert.All(r.Engine.Status.Stations, s => Assert.False(s.AwaitingReview));
+    }
+
     [Fact]
     public async Task Stopping_the_sync_clears_the_desynced_status()
     {

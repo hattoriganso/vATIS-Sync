@@ -82,6 +82,7 @@ public sealed partial class MainViewModel : ObservableObject
         LaunchVatis = _settings.LaunchVatis;
         Approval = _settings.Approval;
         DetailedLog = _settings.DetailedLog;
+        ReviewSound = _settings.ReviewSound;
         Theme = _settings.Theme;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
@@ -401,6 +402,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _launchVatis;
     [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
     [ObservableProperty] private bool _detailedLog = true;
+    [ObservableProperty] private bool _reviewSound;
 
     /// <summary>What the user chose: light, dark, or follow Windows.</summary>
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ThemeSummary))]
@@ -444,6 +446,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
     partial void OnStartSyncOnLaunchChanged(bool value) => Save();
     partial void OnStartMinimizedChanged(bool value) => Save();
+    partial void OnReviewSoundChanged(bool value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
 
     partial void OnStartWithWindowsChanged(bool value)
@@ -479,6 +482,7 @@ public sealed partial class MainViewModel : ObservableObject
         LaunchVatis = LaunchVatis,
         Approval = Approval,
         DetailedLog = DetailedLog,
+        ReviewSound = ReviewSound,
         Theme = Theme,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),
@@ -546,6 +550,16 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsNote = "";
     }
 
+    /// <summary>Set by the app: opens the review window for an airport whose runway change is waiting.</summary>
+    public Action<string>? ReviewRequested { get; set; }
+
+    /// <summary>The airport page's Review button.</summary>
+    [RelayCommand]
+    private void ReviewAirport(AirportViewModel? airport)
+    {
+        if (airport is not null) ReviewRequested?.Invoke(airport.Icao);
+    }
+
     /// <summary>Takes back a Disregard for an airport: checks the real-world ATIS now and asks about any change again.</summary>
     [RelayCommand]
     private void ResyncAirport(AirportViewModel? airport)
@@ -585,12 +599,13 @@ public sealed partial class MainViewModel : ObservableObject
         var rows = s.Stations.Select(st => new StationRow(
             st.Key,
             st.Connected ? "Connected" : "Not connected",
-            st.Desynced ? "Desynced" : !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
+            st.AwaitingReview ? "Needs review" : st.Desynced ? "Desynced" : !st.Connected ? "" : st.DatisAvailable ? "D-ATIS loaded" : "No current D-ATIS",
             st.LastConfiguredAt is { } t ? t.ToLocalTime().ToString("HH:mm:ss") : "",
             Connected: st.Connected,
             Synced: st.LastConfiguredAt is not null && st.DatisAvailable,
             Desynced: st.Desynced,
-            NoDatis: st.Connected && !st.DatisAvailable)).ToList();
+            NoDatis: st.Connected && !st.DatisAvailable,
+            NeedsReview: st.AwaitingReview)).ToList();
 
         // A sync problem stays up until the sync is working again (or stopped), not just until the next retry starts.
         if (s.IsError && s.Message is { } problem) Notify(VatisUnreachable, NoticeKind.Error, problem);

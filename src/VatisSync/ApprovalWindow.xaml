@@ -19,7 +19,7 @@
         </StackPanel>
 
         <!-- One section per connected station that would change; filled in code (see ApprovalWindow.xaml.cs) -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="True">
             <StackPanel x:Name="Sections"/>
         </ScrollViewer>
 
@@ -28,7 +28,8 @@
                 <Button x:Name="MuteButton" Click="Mute_Click" Padding="14,6" Margin="0,0,8,0"
                         AutomationProperties.Name="Disregard, and do not ask about this airport again this session"/>
                 <Button Content="Disregard" Click="Disregard_Click" Padding="14,6" Margin="0,0,8,0" IsCancel="True"/>
-                <Button Content="Apply" Click="Apply_Click" Padding="18,6" IsDefault="True" FontWeight="SemiBold"
+                <!-- Not the default button: Enter does nothing here, so a stray keypress cannot apply a runway change. -->
+                <Button Content="Apply" Click="Apply_Click" Padding="18,6" FontWeight="SemiBold"
                         Style="{StaticResource PrimaryButton}"/>
             </StackPanel>
             <TextBlock Text="Disregard leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again."

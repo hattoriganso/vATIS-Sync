@@ -11,6 +11,13 @@ namespace VatisSync;
 public partial class ApprovalWindow : Window
 {
     private bool _answered;
+    private long _shownAt;
+
+    /// <summary>
+    /// Clicks on Apply in the first moments are ignored. The window opens where the controller just clicked Review, so a
+    /// double-click, or a click that was already on its way, must not land on Apply.
+    /// </summary>
+    private const long IgnoreApplyForMs = 600;
 
     public ApprovalDecision Decision { get; private set; } = ApprovalDecision.Disregard;
 
@@ -32,6 +39,13 @@ public partial class ApprovalWindow : Window
         MuteButton.Content = $"Disregard {request.Airport} for this session";
 
         foreach (var change in request.Changes) Sections.Children.Add(BuildSection(change, several));
+
+        // Nothing is focused except the text itself, so Enter and Space do nothing here (arrow keys scroll). Esc is Disregard.
+        Loaded += (_, _) =>
+        {
+            _shownAt = Environment.TickCount64;
+            Scroller.Focus();
+        };
     }
 
     /// <summary>One station's pair of texts: what vATIS has now, and what the real-world ATIS would put there.</summary>
@@ -125,7 +139,11 @@ public partial class ApprovalWindow : Window
         Close(); // shown non-modally (it must not block the app), so no DialogResult
     }
 
-    private void Apply_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.Apply);
+    private void Apply_Click(object sender, RoutedEventArgs e)
+    {
+        if (Environment.TickCount64 - _shownAt < IgnoreApplyForMs) return;
+        Answer(ApprovalDecision.Apply);
+    }
     private void Mute_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.DisregardForSession);
     private void Disregard_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.Disregard);
 

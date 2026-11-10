@@ -63,6 +63,9 @@ public sealed record StationStatus(
 {
     /// <summary>A change the controller disregarded is still waiting, so vATIS differs from the real-world ATIS.</summary>
     public bool Desynced { get; init; }
+
+    /// <summary>A runway change is waiting for the controller's review. Nothing has been written for this airport.</summary>
+    public bool AwaitingReview { get; init; }
 }
 
 public sealed record SyncStatus(

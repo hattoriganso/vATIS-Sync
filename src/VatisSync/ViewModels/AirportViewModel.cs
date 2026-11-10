@@ -9,10 +9,10 @@ namespace VatisSync.ViewModels;
 /// <param name="Desynced">A change the controller disregarded is still waiting, so vATIS differs from the real world.</param>
 public sealed record StationRow(
     string Key, string Connection, string Datis, string LastUpdated, bool Connected = false, bool Synced = false,
-    bool Desynced = false, bool NoDatis = false)
+    bool Desynced = false, bool NoDatis = false, bool NeedsReview = false)
 {
     /// <summary>The D-ATIS column says something the controller should notice.</summary>
-    public bool NeedsAttention => Desynced || NoDatis;
+    public bool NeedsAttention => Desynced || NoDatis || NeedsReview;
 }
 
 public enum AirportStatus
@@ -34,6 +34,9 @@ public enum AirportStatus
 
     /// <summary>A station is connected, but there is no current real-world D-ATIS to put in it.</summary>
     NoDatis,
+
+    /// <summary>A runway change is waiting for the controller; nothing has been written for this airport.</summary>
+    Review,
 }
 
 /// <summary>The marker for the pinned first entry of the airport list: overall status and the log.</summary>
@@ -120,11 +123,16 @@ public sealed partial class AirportViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText), nameof(NeedsAttention))]
     private bool _hasNoDatis;
 
+    /// <summary>A runway change is waiting for the controller to review it.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Status), nameof(StatusText), nameof(NeedsAttention))]
+    private bool _isAwaitingReview;
+
     /// <summary>Its dot in the list is amber, not green: live, but not what the real world says.</summary>
-    public bool NeedsAttention => !IsStale && (IsDesynced || HasNoDatis);
+    public bool NeedsAttention => !IsStale && (IsAwaitingReview || IsDesynced || HasNoDatis);
 
     /// <summary>Stale outranks everything (nothing is synced for it); then desynced and no D-ATIS (they must not hide behind Connected); then live, then written, then waiting.</summary>
     public AirportStatus Status => IsStale ? AirportStatus.Stale
+        : IsAwaitingReview ? AirportStatus.Review
         : IsDesynced ? AirportStatus.Desynced
         : HasNoDatis ? AirportStatus.NoDatis
         : IsConnected ? AirportStatus.Connected
@@ -134,6 +142,7 @@ public sealed partial class AirportViewModel : ObservableObject
     public string StatusText => Messages.Get(Status switch
     {
         AirportStatus.Stale => Msg.AirportStale,
+        AirportStatus.Review => Msg.AirportReview,
         AirportStatus.Desynced => Msg.AirportDesynced,
         AirportStatus.NoDatis => Msg.AirportNoDatis,
         AirportStatus.Connected => Msg.AirportConnected,
@@ -181,6 +190,7 @@ public sealed partial class AirportViewModel : ObservableObject
         IsSynced = Stations.Any(s => s.Synced);
         IsDesynced = Stations.Any(s => s.Desynced);
         HasNoDatis = Stations.Any(s => s.NoDatis);
+        IsAwaitingReview = Stations.Any(s => s.NeedsReview);
         OnPropertyChanged(nameof(HasNoStations));
     }
 }

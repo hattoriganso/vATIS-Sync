@@ -82,7 +82,7 @@ public class MessagesTests
     [Fact]
     public void A_placeholder_with_no_value_stays_visible_and_an_unknown_key_gives_its_name()
     {
-        Assert.Equal("Waiting for your approval ({station})…", Messages.Get(Msg.EngineWaitingApproval, new { other = 1 }));
+        Assert.Equal("Connected {station}.", Messages.Get(Msg.EngineConnected, new { other = 1 }));
         Assert.Equal("no.such.key", Messages.Get(new MessageKey("no.such.key")));
     }
 }
