@@ -22,9 +22,9 @@ public sealed class SyncEngine(
     private readonly Dictionary<string, StationStatus> _stations = [];
 
     // Per sync session: text the controller declined (so it is not asked about again) and stations
-    // they chose to stop being asked about.
+    // they chose to stop being asked about (their ATIS is left alone until the sync restarts).
     private readonly Dictionary<string, string> _declined = [];
-    private readonly HashSet<string> _noMoreAsking = [];
+    private readonly HashSet<string> _mutedForSession = [];
 
     private SyncStatus _status = SyncStatus.Initial;
     private CancellationTokenSource? _cts;
@@ -108,7 +108,7 @@ public sealed class SyncEngine(
     {
         _stations.Clear();
         _declined.Clear();
-        _noMoreAsking.Clear();
+        _mutedForSession.Clear();
         var letters = new LetterSync();
 
         Publish(SyncPhase.Starting, Messages.Get(Msg.EngineStarting));
@@ -230,7 +230,7 @@ public sealed class SyncEngine(
     private async Task<bool> ApprovedAsync(string key, VatisAtisState state, FormattedAtis text, CancellationToken ct)
     {
         if (options.Approval == ApprovalMode.Never || approver is null) return true;
-        if (_noMoreAsking.Contains(key)) return true;
+        if (_mutedForSession.Contains(key)) return false;
 
         var current = state.AirportConditions.Trim();
         var updated = text.AirportConditions.Trim();
@@ -250,13 +250,13 @@ public sealed class SyncEngine(
 
         switch (decision)
         {
-            case ApprovalDecision.KeepCurrent:
+            case ApprovalDecision.DisregardForSession:
+                _mutedForSession.Add(key);
+                goto case ApprovalDecision.Disregard;
+            case ApprovalDecision.Disregard:
                 _declined[key] = fingerprint;
                 Info(Messages.Get(Msg.EngineApprovalKept, new { station = key, summary = request.Summary }));
                 return false;
-            case ApprovalDecision.ApplyAndStopAsking:
-                _noMoreAsking.Add(key);
-                goto default;
             default:
                 _declined.Remove(key);
                 Info(Messages.Get(Msg.EngineApprovalApplied, new { station = key, summary = request.Summary }), LogKind.Success);

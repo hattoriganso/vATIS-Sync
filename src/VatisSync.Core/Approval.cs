@@ -22,10 +22,13 @@ public enum ApprovalDecision
     Apply,
 
     /// <summary>Leave the ATIS as it is. Not asked again until the new text changes.</summary>
-    KeepCurrent,
+    Disregard,
 
-    /// <summary>Send the update and stop asking for this station until the app restarts the sync.</summary>
-    ApplyAndStopAsking,
+    /// <summary>
+    /// Leave the ATIS as it is, and do not ask about this station again until the sync is restarted. Nothing is ever applied
+    /// without the controller choosing Apply, so a runway change cannot slip through unseen.
+    /// </summary>
+    DisregardForSession,
 }
 
 /// <param name="Station">Station key, e.g. "KPHX" or "KATL_A".</param>

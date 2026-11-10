@@ -245,7 +245,7 @@ public class SyncEngineTests
     [Fact]
     public async Task Declined_change_is_not_written_and_not_asked_again_for_the_same_text()
     {
-        var approver = new FakeApprover(_ => ApprovalDecision.KeepCurrent);
+        var approver = new FakeApprover(_ => ApprovalDecision.Disregard);
         var r = ApprovalRig(approver);
         await StartedWith(r, "ILS RWY 28R IN USE.");
 
@@ -262,19 +262,20 @@ public class SyncEngineTests
     }
 
     [Fact]
-    public async Task Apply_and_stop_asking_silences_the_station()
+    public async Task Disregard_for_session_silences_the_station_but_never_applies_anything()
     {
-        var approver = new FakeApprover(_ => ApprovalDecision.ApplyAndStopAsking);
+        var approver = new FakeApprover(_ => ApprovalDecision.DisregardForSession);
         var r = ApprovalRig(approver);
         await StartedWith(r, "ILS RWY 28R IN USE.");
 
         r.Datis.Entries = [Conditions("KSFO", "ILS RWY 10L IN USE.")];
-        await WaitForText(r, "RWY 10L");
-        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")];
-        await WaitForText(r, "RWY 1 IN USE");
+        await WaitFor(() => approver.Requests.Count == 1, "the question");
+        r.Datis.Entries = [Conditions("KSFO", "ILS RWY 1 IN USE.")]; // new text, but the station is muted
+        await Task.Delay(300); // several more refresh cycles at 40 ms
         await r.Engine.StopAsync();
 
         Assert.Single(approver.Requests);
+        Assert.Contains("RWY 28R", r.Vatis.StateOf("KSFO").Conditions); // vATIS still has the old flow
     }
 
     [Fact]

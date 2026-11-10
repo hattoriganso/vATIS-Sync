@@ -10,7 +10,7 @@ public partial class ApprovalWindow : Window
 {
     private bool _answered;
 
-    public ApprovalDecision Decision { get; private set; } = ApprovalDecision.KeepCurrent;
+    public ApprovalDecision Decision { get; private set; } = ApprovalDecision.Disregard;
 
     public ApprovalWindow(ApprovalRequest request)
     {
@@ -26,7 +26,7 @@ public partial class ApprovalWindow : Window
             ? $"From {request.CurrentFlow.Describe()} to {request.NewFlow.Describe()}."
             : "";
         Summary.Visibility = request.FlowChanged ? Visibility.Visible : Visibility.Collapsed;
-        StopAskingButton.Content = $"Apply, and stop asking for {request.Station}";
+        MuteButton.Content = $"Disregard {request.Station} for this session";
 
         var (oldWords, newWords) = WordDiff.Compare(request.CurrentConditions, request.NewConditions);
         Fill(CurrentText, oldWords, "ErrorText", "ErrorWash");
@@ -67,13 +67,13 @@ public partial class ApprovalWindow : Window
     }
 
     private void Apply_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.Apply);
-    private void StopAsking_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.ApplyAndStopAsking);
-    private void Keep_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.KeepCurrent);
+    private void Mute_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.DisregardForSession);
+    private void Disregard_Click(object sender, RoutedEventArgs e) => Answer(ApprovalDecision.Disregard);
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         // Closing the window with the X is the safe answer: leave the ATIS as it is.
-        if (!_answered) Decision = ApprovalDecision.KeepCurrent;
+        if (!_answered) Decision = ApprovalDecision.Disregard;
         base.OnClosing(e);
     }
 }
