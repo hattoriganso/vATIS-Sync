@@ -494,4 +494,5 @@ $RECYCLE.BIN/
 
 # Developer notes on how the code works and the test plan, local only (and the one picture only they use)
 /docs/Architecture.md
+/docs/TestPlan.md
 /docs/images/settings-connecting.png
