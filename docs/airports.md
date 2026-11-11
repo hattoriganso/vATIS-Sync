@@ -9,6 +9,8 @@ mean, what each airport's page shows, and where an airport's own settings are ke
 - [Settings for one airport](#settings-for-one-airport)
 - [The Airports folder](#the-airports-folder)
 
+![The main window: the Overview, with the airport list on the left](images/overview.png)
+
 ## Where the airports come from
 
 The list is filled only from the vATIS profile you have open. There is no way to type an airport in: an airport that is
@@ -26,6 +28,9 @@ not in your profile cannot be synced, so listing it would do nothing.
   runs down by itself. When it ends the app tries again, and starts a new 15-second countdown if that fails, until vATIS
   answers. **Retry now** tries immediately and restarts the countdown if that fails too. Every failed attempt and every
   success is written to the Log.
+
+  ![The window while vATIS is not answering: an empty list, a countdown and a yellow bar](images/discovery-waiting.png)
+
 - **Nothing is remembered.** The list starts empty each time the app starts and fills as vATIS answers. Each airport's
   own settings are kept on disk anyway (see [The Airports folder](#the-airports-folder)).
 
@@ -49,6 +54,10 @@ and turns amber for **Needs review**, **Desynced** and **No D-ATIS**: the ATIS i
 
 An empty profile (no station with a D-ATIS preset) marks every listed airport stale and shows a warning.
 
+Here KPHX needs review: its word and its dot are amber, and so is its row under **Your stations**.
+
+![The Overview with one airport waiting for review](images/overview-review.png)
+
 ## An airport's page
 
 Under the airport's name are two tabs. **Summary** is shown first; each airport remembers which tab you last used for the
@@ -65,6 +74,11 @@ One card for each station of the airport. A card shows:
 The checkbox **Show what was changed from the real-world text** compares that text with the raw real-world D-ATIS:
 words that were taken out are struck through in red, and words that were put in (a replacement frequency, for example)
 are highlighted in green.
+
+![The Summary tab of KMIA, with the comparison switched on](images/airport-summary.png)
+
+In this picture a built-in rule took out the Flight Service sentence, and KMIA's own frequency setting replaced two
+frequencies with `118.300`.
 
 It works before you press Start. The app downloads the real-world D-ATIS from atis.info (the same source the sync uses)
 and applies this airport's rules and frequency settings itself. It writes nothing into vATIS.
@@ -93,6 +107,8 @@ each position's [frequencies](rules.md#frequencies) are handled.
   independent: an airport can use its own frequencies and the default rules.
 - **Following the defaults again.** Tick the box. If both sections follow the defaults, the airport has no settings file.
 - Settings are saved as soon as you change them. While the sync is running, changes apply the next time you press Start.
+
+![The Settings tab of KMIA: the default rules, and its own frequencies](images/airport-settings.png)
 
 ## The Airports folder
 

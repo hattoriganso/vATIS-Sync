@@ -491,3 +491,7 @@ $RECYCLE.BIN/
 
 # Private planning notes, local only
 /PLAN.md
+
+# Developer notes on how the code works, local only (and the one picture only it uses)
+/docs/Architecture.md
+/docs/images/settings-connecting.png

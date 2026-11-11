@@ -8,6 +8,10 @@ The app can be light or dark, and by default it follows Windows.
 - [What follows the theme](#what-follows-the-theme)
 - [Limits](#limits)
 
+| Light | Dark |
+|---|---|
+| ![The main window in light](images/overview.png) | ![The main window in dark](images/overview-dark.png) |
+
 ## Choosing
 
 Under **Settings**, in **Appearance**:
@@ -19,6 +23,8 @@ Under **Settings**, in **Appearance**:
 | **Dark** | Always dark. |
 
 The choice is saved and applied the moment you change it. Nothing needs a restart, and a sync in progress is not affected.
+
+![The General tab of the Settings window, with Appearance in the middle](images/settings-general.png)
 
 ## The quick switch
 
@@ -46,5 +52,5 @@ text and background pair in the dark colors is checked for contrast, and the che
 
 - **Title bars need a recent Windows.** Windows draws them, and dark title bars exist on Windows 10 (version 1903 and
   later) and Windows 11. On anything older the title bar stays light; nothing else changes.
-- **Windows notifications are Windows'.** The balloon that tells you a question is waiting follows Windows' own theme,
-  not this setting.
+- **Windows notifications are Windows'.** The one notification the app sends (the first time it hides to the tray, to
+  say it is still running) follows Windows' own theme, not this setting.

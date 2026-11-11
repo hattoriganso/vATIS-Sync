@@ -30,6 +30,8 @@ stray punctuation behind. This is also why a rule that matches a *sentence* does
 To see the result for an airport, open its **Summary** tab and tick *Show what was changed from the real-world text*:
 removed words are struck through and words that were put in are highlighted. See [Airports](airports.md#summary).
 
+![The Summary tab showing what the rules removed and what was put in](images/airport-summary.png)
+
 ## Built-in rules
 
 Built-in rules apply to every airport. They are defined in
@@ -37,6 +39,8 @@ Built-in rules apply to every airport. They are defined in
 a description and one or more patterns. Each one can be switched off. The switches for all airports are in the Settings
 window (the gear icon), under *Default rules for all airports*. An airport can have its own set instead, on the
 **Settings** tab of its page. See [Settings for one airport](airports.md#settings-for-one-airport).
+
+![The Rules tab of the Settings window: default rules and default frequencies](images/settings-rules.png)
 
 ### What counts as a sentence
 
@@ -172,6 +176,8 @@ frequencies for all airports*; an airport can have its own on the **Settings** t
   the real text is kept.
 
 Replacement frequencies are always chosen by you. They are never guessed or looked up.
+
+![An airport's own frequency settings, with one position set to Replace with](images/airport-settings.png)
 
 Positions: clearance delivery, ground, tower, departure, approach, ramp, metering, helicopter control, and
 *Other* for a frequency whose position the text does not name (KMIA's `RWY 9 FREQ 123.9`).

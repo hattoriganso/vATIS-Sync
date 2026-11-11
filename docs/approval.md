@@ -26,6 +26,8 @@ Set it under **Settings**, in **Changes to a connected ATIS**:
 | **Ask me when the runways change** (the default) | The runways or the approach types in the text change. |
 | **Apply runway changes automatically** | Never. Every refresh is written without asking. |
 
+![The General tab of the Settings window](images/settings-general.png)
+
 An older version also had "Ask me before any change". It was removed; a settings file that still says so is read as
 the default.
 
@@ -42,8 +44,14 @@ A change waiting for you never opens a window by itself.
   the main screen): `KPHX: Runways 26 → 8.`, with **Review** and
   **Later**. It stays on top but is never the active window, so nothing you type or press can answer it, and it has no
   Apply button: it only offers to open the review window.
+
+  ![The review strip for one airport](images/review-strip.png)
+
 - **Several airports.** When more than one airport has a change waiting, the strip reads `2 airports waiting review`,
   and **Review** opens the one that has waited longest.
+
+  ![The review strip when two airports are waiting](images/review-strip-multi.png)
+
 - **Later** hides the strip for 3 minutes. If a change is still waiting then, it comes back. An airport that starts
   waiting in the meantime is counted when it comes back. You can change the time (1 to 30 minutes) under **Settings**,
   in **Changes to a connected ATIS**, next to the screen and corner choices.
@@ -54,6 +62,8 @@ A change waiting for you never opens a window by itself.
   mouse.
 - **In the app**, the airport reads **Needs review** in amber (its dot turns amber too, and so does the D-ATIS column
   of its stations on the Overview), and its page has a banner with a **Review** button.
+
+  ![The page of an airport that needs review, with its banner and Review button](images/airport-review.png)
 
 **The sync does not wait for you.** Only the airport with the change waits: nothing is written for it until you decide,
 and the other airports keep refreshing on schedule. When you answer, the answer takes effect at once, not at the next
@@ -69,6 +79,8 @@ refresh.
 Click **Review** and the window opens in front of the other windows. It is titled `Approve ATIS change - KPHX`. It does
 not block the app.
 
+![The review window for one station](images/approval-window.png)
+
 - **Headline.** `KPHX: runways changed`, with a line under it that says how
   (`Runways 26 → 8.`, with the approaches too when they change: `Approaches ILS → RNAV, VISUAL.`).
 - **Two panes.** **Now in vATIS** on the left, and **New (from the real-world D-ATIS)** on the right. The words that
@@ -83,6 +95,11 @@ not block the app.
 - **Apply ignores the first moment.** A click on **Apply** in the first 0.6 seconds after the window opens is ignored,
   so a double-click on **Review** cannot land on it.
 - **A reminder under the buttons** says what **Disregard** and the session button do, so you do not have to remember.
+
+With two stations, each has its own pair of panes. Here only KMIA_D changes runways, and KMIA_A is listed because
+the two are applied or held together:
+
+![The review window for an airport with two stations](images/approval-window-multi.png)
 
 ## The three choices
 
@@ -132,6 +149,8 @@ Disregarding a change means vATIS now differs from the real-world ATIS, and you 
 ## Resync
 
 On the page of a Desynced airport, an amber banner explains why and offers **Resync**.
+
+![The page of a Desynced airport, with the Resync banner](images/airport-desynced.png)
 
 - **What it does.** It takes back your Disregard for that airport (including *Disregard for this session*) and checks
   the real-world ATIS straight away, without waiting for the next refresh.

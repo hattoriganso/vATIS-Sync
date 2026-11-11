@@ -10,6 +10,8 @@ anyone helping you can read it.
 - [Errors](#errors)
 - [Sending a log to someone](#sending-a-log-to-someone)
 
+![The Overview, with the Log at the bottom and Open log folder above it](images/overview-review.png)
+
 ## Where the files are
 
 In `%APPDATA%\VatisSync\logs`. Press **Open log folder**, above the Log on the Overview, to open it.
