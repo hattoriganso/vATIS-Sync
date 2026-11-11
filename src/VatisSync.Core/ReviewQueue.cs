@@ -27,9 +27,6 @@ public sealed class ReviewQueue : IUpdateApprover
     /// <summary>Raised, from whatever thread did it, whenever something is added or removed.</summary>
     public event Action? Changed;
 
-    /// <summary>Raised for each new change that starts waiting.</summary>
-    public event Action<ApprovalRequest>? Asked;
-
     /// <summary>What is waiting, oldest first.</summary>
     public IReadOnlyList<ReviewItem> Items
     {
@@ -56,7 +53,6 @@ public sealed class ReviewQueue : IUpdateApprover
             if (Remove(item)) item.Source.TrySetCanceled(ct);
         });
 
-        Asked?.Invoke(request);
         Changed?.Invoke();
         return item.Source.Task;
     }

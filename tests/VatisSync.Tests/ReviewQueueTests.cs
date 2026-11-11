@@ -55,16 +55,13 @@ public class ReviewQueueTests
     {
         var queue = new ReviewQueue();
         var changed = 0;
-        var asked = new List<string>();
         queue.Changed += () => changed++;
-        queue.Asked += r => asked.Add(r.Airport);
 
         _ = queue.RequestAsync(Request("KPHX"), CancellationToken.None);
         _ = queue.RequestAsync(Request("KLAX"), CancellationToken.None);
         queue.Decide(queue.Items[0], ApprovalDecision.Disregard);
 
         Assert.Equal(["KLAX"], queue.Items.Select(i => i.Airport));
-        Assert.Equal(["KPHX", "KLAX"], asked);
         Assert.Equal(3, changed); // two added, one answered
     }
 

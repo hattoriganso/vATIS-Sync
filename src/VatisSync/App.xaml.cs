@@ -51,8 +51,6 @@ public partial class App : Application
         // A change waiting for review never opens a window by itself: a small strip appears in a corner and the
         // comparison window opens when the controller clicks Review.
         var reviews = new ReviewQueue();
-        reviews.Asked += request => Dispatcher.BeginInvoke(() => _tray?.ShowNotification("ATIS change waiting for your review",
-            $"{request.Airport}: {request.FlowSummary}"));
         _vm = new MainViewModel(
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
             approver: reviews,

@@ -48,8 +48,8 @@ A change waiting for you never opens a window by itself.
 - **A sound**, if you want one. Under **Settings**, in **Changes to a connected ATIS**, tick *Play a soft sound when a
   change is waiting for my review*. It is off by default. It plays when the strip appears, and again if the strip comes
   back after Later, but not for each change while the strip is already showing.
-- **A tray notification** says the same, and **Review waiting changes** in the tray menu opens the review window, for
-  anyone who works without the mouse.
+- **The tray menu** has **Review waiting changes**, which opens the review window, for anyone who works without the
+  mouse.
 - **In the app**, the airport reads **Needs review** in amber (its dot turns amber too, and so does the D-ATIS column
   of its stations on the Overview), and its page has a banner with a **Review** button.
 
