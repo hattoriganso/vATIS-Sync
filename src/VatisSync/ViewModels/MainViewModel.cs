@@ -369,15 +369,6 @@ public sealed partial class MainViewModel : ObservableObject
         Airports.Insert(index, page);
     }
 
-    /// <summary>Takes an airport off the list for this session. Its settings file is kept; it comes back when vATIS reports it.</summary>
-    [RelayCommand]
-    private void RemoveAirport(AirportViewModel? page)
-    {
-        if (page is null) return;
-        if (SelectedPage == page) SelectedPage = Overview;
-        Airports.Remove(page);
-    }
-
     private static bool IsIcao(string s) => s.Length == 4 && s.All(char.IsLetterOrDigit);
 
     // ---- defaults (edited in the Settings window) ----

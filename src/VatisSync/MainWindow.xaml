@@ -236,11 +236,6 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:AirportViewModel}">
                                 <DockPanel Margin="11,5,9,5" Background="Transparent">
-                                    <DockPanel.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Hide from this list (its settings are kept)" Click="OnRemoveAirport"/>
-                                        </ContextMenu>
-                                    </DockPanel.ContextMenu>
                                     <!-- Filled when connected, a ring when not. Amber when the airport needs a look (desynced, or live with no D-ATIS). -->
                                     <Ellipse DockPanel.Dock="Right" Width="9" Height="9" Margin="8,0,2,0" VerticalAlignment="Center"
                                              StrokeThickness="1.5">
@@ -266,14 +261,6 @@
                                             </Style>
                                         </Ellipse.Style>
                                     </Ellipse>
-                                    <Button DockPanel.Dock="Right" MinWidth="22" Padding="3,0" Margin="4,0,0,0" VerticalAlignment="Center"
-                                            Background="Transparent" BorderThickness="0" ToolTip="Hide from the list. Its settings are kept."
-                                            AutomationProperties.Name="Hide airport from the list"
-                                            Command="{Binding DataContext.RemoveAirportCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE738;" FontSize="12" Foreground="{DynamicResource WarningText}"/>
-                                    </Button>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Icao}" FontSize="15">
                                             <TextBlock.Style>
@@ -621,7 +608,7 @@
                                     <Border Background="{DynamicResource WarningWash}" BorderBrush="{DynamicResource WarningMark}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextStrong}"
-                                                   Text="This airport is no longer in your vATIS profile. Its settings are saved and come back if it returns, but nothing is synced for it. Use the minus button in the list to hide it."/>
+                                                   Text="This airport is no longer in your vATIS profile. Its settings are saved and come back if it returns, but nothing is synced for it."/>
                                     </Border>
                                 </StackPanel>
 
