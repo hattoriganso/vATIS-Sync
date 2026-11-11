@@ -12,6 +12,7 @@ namespace VatisSync.ViewModels;
 
 public sealed record ApprovalChoice(ApprovalMode Mode, string Label);
 public sealed record ThemeChoice(ThemePreference Value, string Label);
+public sealed record CornerChoice(ScreenCorner Value, string Label);
 
 public sealed partial class MainViewModel : ObservableObject
 {
@@ -32,6 +33,14 @@ public sealed partial class MainViewModel : ObservableObject
     [
         new(ApprovalMode.RunwayChanges, "Ask me when the runways change"),
         new(ApprovalMode.Never, "Apply runway changes automatically"),
+    ];
+
+    public static IReadOnlyList<CornerChoice> CornerChoices { get; } =
+    [
+        new(ScreenCorner.BottomRight, "Bottom right"),
+        new(ScreenCorner.BottomLeft, "Bottom left"),
+        new(ScreenCorner.TopRight, "Top right"),
+        new(ScreenCorner.TopLeft, "Top left"),
     ];
 
     public static IReadOnlyList<ThemeChoice> ThemeChoices { get; } =
@@ -83,6 +92,7 @@ public sealed partial class MainViewModel : ObservableObject
         Approval = _settings.Approval;
         DetailedLog = _settings.DetailedLog;
         ReviewSound = _settings.ReviewSound;
+        ReviewCorner = _settings.ReviewCorner;
         Theme = _settings.Theme;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
@@ -403,6 +413,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private ApprovalMode _approval = ApprovalMode.RunwayChanges;
     [ObservableProperty] private bool _detailedLog = true;
     [ObservableProperty] private bool _reviewSound;
+    [ObservableProperty] private ScreenCorner _reviewCorner = ScreenCorner.BottomRight;
 
     /// <summary>What the user chose: light, dark, or follow Windows.</summary>
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ThemeSummary))]
@@ -447,6 +458,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnStartSyncOnLaunchChanged(bool value) => Save();
     partial void OnStartMinimizedChanged(bool value) => Save();
     partial void OnReviewSoundChanged(bool value) => Save();
+    partial void OnReviewCornerChanged(ScreenCorner value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
 
     partial void OnStartWithWindowsChanged(bool value)
@@ -483,6 +495,7 @@ public sealed partial class MainViewModel : ObservableObject
         Approval = Approval,
         DetailedLog = DetailedLog,
         ReviewSound = ReviewSound,
+        ReviewCorner = ReviewCorner,
         Theme = Theme,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),

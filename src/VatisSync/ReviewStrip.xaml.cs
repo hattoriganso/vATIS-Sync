@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using VatisSync.Core;
 using VatisSync.Services;
 
 namespace VatisSync;
@@ -54,12 +55,16 @@ public partial class ReviewStrip : Window
         if (AutoPlace) PlaceInCorner();
     }
 
-    /// <summary>Bottom right of the main screen's work area, clear of the taskbar.</summary>
+    /// <summary>The corner the strip sits in. Set before it is shown.</summary>
+    public ScreenCorner Corner { get; set; } = ScreenCorner.BottomRight;
+
+    /// <summary>The chosen corner of the main screen's work area, clear of the taskbar.</summary>
     private void PlaceInCorner()
     {
         var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth - 16;
-        Top = area.Bottom - ActualHeight - 16;
+        const double gap = 16;
+        Left = Corner is ScreenCorner.BottomLeft or ScreenCorner.TopLeft ? area.Left + gap : area.Right - ActualWidth - gap;
+        Top = Corner is ScreenCorner.TopLeft or ScreenCorner.TopRight ? area.Top + gap : area.Bottom - ActualHeight - gap;
     }
 
     private void OnReview(object sender, RoutedEventArgs e) => ReviewClicked?.Invoke();

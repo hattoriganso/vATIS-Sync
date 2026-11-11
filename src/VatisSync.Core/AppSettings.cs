@@ -30,6 +30,9 @@ public sealed record AppSettings
     /// <summary>A soft sound when a change starts waiting for the controller's review. Off by default: many will not want it.</summary>
     public bool ReviewSound { get; init; }
 
+    /// <summary>The corner of the screen the review strip appears in.</summary>
+    public ScreenCorner ReviewCorner { get; init; } = ScreenCorner.BottomRight;
+
     /// <summary>Light, dark, or follow Windows (the default). Windows High Contrast overrides all three.</summary>
     public ThemePreference Theme { get; init; } = ThemePreference.System;
 

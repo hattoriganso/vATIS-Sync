@@ -57,7 +57,7 @@ public partial class App : Application
             applyTray: visible => { if (_tray is not null) _tray.Visibility = Visibility.Visible; },
             approver: reviews,
             activityLog: _activity);
-        _prompt = new ReviewPrompt(reviews, () => _vm.ReviewSound);
+        _prompt = new ReviewPrompt(reviews, () => _vm.ReviewSound, () => _vm.ReviewCorner);
         _vm.ReviewRequested = _prompt.Review;
         _activity.TraceEnabled = _vm.DetailedLog;
 

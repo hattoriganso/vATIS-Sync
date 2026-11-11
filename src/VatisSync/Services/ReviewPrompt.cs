@@ -18,16 +18,18 @@ public sealed class ReviewPrompt
 
     private readonly ReviewQueue _queue;
     private readonly Func<bool> _playSound;
+    private readonly Func<ScreenCorner> _corner;
     private readonly Dispatcher _ui = Application.Current.Dispatcher;
     private readonly Dictionary<ReviewItem, ApprovalWindow> _windows = [];
     private readonly DispatcherTimer _reminder = new() { Interval = ReminderAfter };
     private ReviewStrip? _strip;
     private bool _snoozed;
 
-    public ReviewPrompt(ReviewQueue queue, Func<bool> playSound)
+    public ReviewPrompt(ReviewQueue queue, Func<bool> playSound, Func<ScreenCorner> corner)
     {
         _queue = queue;
         _playSound = playSound;
+        _corner = corner;
         _reminder.Tick += (_, _) =>
         {
             _reminder.Stop();
@@ -107,7 +109,7 @@ public sealed class ReviewPrompt
         var text = ReviewQueue.StripText(waiting);
         if (_strip is null)
         {
-            _strip = new ReviewStrip { DetailText = text };
+            _strip = new ReviewStrip { DetailText = text, Corner = _corner() };
             _strip.ReviewClicked += ReviewNext;
             _strip.LaterClicked += Later;
             _strip.Show();
