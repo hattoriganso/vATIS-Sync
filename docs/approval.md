@@ -45,7 +45,8 @@ A change waiting for you never opens a window by itself.
 - **Several airports.** When more than one airport has a change waiting, the strip reads `2 airports waiting review`,
   and **Review** opens the one that has waited longest.
 - **Later** hides the strip for 3 minutes. If a change is still waiting then, it comes back. An airport that starts
-  waiting in the meantime is counted when it comes back.
+  waiting in the meantime is counted when it comes back. You can change the time (1 to 30 minutes) under **Settings**,
+  in **Changes to a connected ATIS**, next to the screen and corner choices.
 - **A sound**, if you want one. Under **Settings**, in **Changes to a connected ATIS**, tick *Play a soft sound when a
   change is waiting for my review*. It is off by default. It plays when the strip appears, and again if the strip comes
   back after Later, but not for each change while the strip is already showing.
@@ -81,6 +82,7 @@ not block the app.
   cannot answer it. Use the mouse, or Tab to a button. Esc is **Disregard**.
 - **Apply ignores the first moment.** A click on **Apply** in the first 0.6 seconds after the window opens is ignored,
   so a double-click on **Review** cannot land on it.
+- **A reminder under the buttons** says what **Disregard** and the session button do, so you do not have to remember.
 
 ## The three choices
 

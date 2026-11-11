@@ -67,6 +67,20 @@
                                           AutomationProperties.Name="Corner of the screen for the review strip"/>
                                 <TextBlock Text="corner" VerticalAlignment="Center" Margin="8,0,0,0"/>
                             </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="If I click Later, remind me after" VerticalAlignment="Center"/>
+                                <ComboBox Width="70" Margin="8,0" SelectedValuePath="Tag" SelectedValue="{Binding ReviewReminderMinutes}"
+                                          AutomationProperties.Name="Minutes before the review strip comes back after Later">
+                                    <ComboBoxItem Content="1" Tag="1"/>
+                                    <ComboBoxItem Content="2" Tag="2"/>
+                                    <ComboBoxItem Content="3" Tag="3"/>
+                                    <ComboBoxItem Content="5" Tag="5"/>
+                                    <ComboBoxItem Content="10" Tag="10"/>
+                                    <ComboBoxItem Content="15" Tag="15"/>
+                                    <ComboBoxItem Content="30" Tag="30"/>
+                                </ComboBox>
+                                <TextBlock Text="minutes" VerticalAlignment="Center"/>
+                            </StackPanel>
                             <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
                                        Text="A small strip appears there and never takes the keyboard, so nothing you type can answer it. Click Review when you are ready. The sound is off by default."/>
                         </StackPanel>

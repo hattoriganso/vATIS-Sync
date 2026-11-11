@@ -94,6 +94,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReviewSound = _settings.ReviewSound;
         ReviewCorner = _settings.ReviewCorner;
         ReviewScreen = _settings.ReviewScreen;
+        ReviewReminderMinutes = _settings.ReviewReminderMinutes;
         Theme = _settings.Theme;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
@@ -416,6 +417,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _reviewSound;
     [ObservableProperty] private ScreenCorner _reviewCorner = ScreenCorner.BottomRight;
     [ObservableProperty] private string _reviewScreen = "";
+    [ObservableProperty] private int _reviewReminderMinutes = 3;
 
     /// <summary>The screens to pick from, as connected right now (the settings window is made fresh each time it opens).</summary>
     public IReadOnlyList<ScreenChoice> ScreenChoices => Screens.Choices(ReviewScreen);
@@ -465,6 +467,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnReviewSoundChanged(bool value) => Save();
     partial void OnReviewCornerChanged(ScreenCorner value) => Save();
     partial void OnReviewScreenChanged(string value) => Save();
+    partial void OnReviewReminderMinutesChanged(int value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
 
     partial void OnStartWithWindowsChanged(bool value)
@@ -503,6 +506,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReviewSound = ReviewSound,
         ReviewCorner = ReviewCorner,
         ReviewScreen = ReviewScreen,
+        ReviewReminderMinutes = ReviewReminderMinutes,
         Theme = Theme,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),

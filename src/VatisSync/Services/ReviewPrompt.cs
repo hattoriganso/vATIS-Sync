@@ -13,22 +13,21 @@ namespace VatisSync.Services;
 /// </summary>
 public sealed class ReviewPrompt
 {
-    /// <summary>How long Later hides the strip before it reminds the controller.</summary>
-    public static readonly TimeSpan ReminderAfter = TimeSpan.FromMinutes(3);
-
     private readonly ReviewQueue _queue;
     private readonly Func<bool> _playSound;
     private readonly Func<ScreenCorner> _corner;
     private readonly Func<string> _screen;
     private readonly Dispatcher _ui = Application.Current.Dispatcher;
     private readonly Dictionary<ReviewItem, ApprovalWindow> _windows = [];
-    private readonly DispatcherTimer _reminder = new() { Interval = ReminderAfter };
+    private readonly Func<int> _reminderMinutes;
+    private readonly DispatcherTimer _reminder = new();
     private ReviewStrip? _strip;
     private bool _snoozed;
 
-    public ReviewPrompt(ReviewQueue queue, Func<bool> playSound, Func<ScreenCorner> corner, Func<string> screen)
+    public ReviewPrompt(ReviewQueue queue, Func<bool> playSound, Func<ScreenCorner> corner, Func<string> screen, Func<int> reminderMinutes)
     {
         _screen = screen;
+        _reminderMinutes = reminderMinutes;
         _queue = queue;
         _playSound = playSound;
         _corner = corner;
@@ -124,6 +123,8 @@ public sealed class ReviewPrompt
     {
         _snoozed = true;
         _reminder.Stop();
+        // Read when Later is clicked, so a change in Settings applies to the very next Later.
+        _reminder.Interval = TimeSpan.FromMinutes(Math.Clamp(_reminderMinutes(), AppSettings.MinReminderMinutes, AppSettings.MaxReminderMinutes));
         _reminder.Start();
         HideStrip();
     }

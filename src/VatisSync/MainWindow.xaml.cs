@@ -26,6 +26,10 @@ public partial class MainWindow : Window
         WindowSizing.FitToScreen(this);
         DataContext = _vm = vm;
 
+        // Showing the newest log line asks every scroller above it to bring that line into view too, which scrolled the whole
+        // Overview down past its title. The log scrolls itself; the page must stay where the controller left it.
+        LogList.RequestBringIntoView += (_, e) => e.Handled = true;
+
         // Keep the newest log line in view. This must not touch the list while the collection is still announcing the
         // change: the list may not have processed it yet, and measuring it then fails ("inconsistent with its items
         // source"). So scroll once the dispatcher is free.

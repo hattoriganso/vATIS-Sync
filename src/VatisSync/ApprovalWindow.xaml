@@ -32,8 +32,7 @@
                 <Button Content="Apply" Click="Apply_Click" Padding="18,6" FontWeight="SemiBold"
                         Style="{StaticResource PrimaryButton}"/>
             </StackPanel>
-            <TextBlock Text="Disregard leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again."
-                       Margin="0,8,0,0" TextWrapping="Wrap" HorizontalAlignment="Right"
+            <TextBlock x:Name="Hint" Margin="0,8,0,0" TextWrapping="Wrap" HorizontalAlignment="Right" TextAlignment="Right"
                        Foreground="{DynamicResource TextSecondary}"/>
         </StackPanel>
     </Grid>

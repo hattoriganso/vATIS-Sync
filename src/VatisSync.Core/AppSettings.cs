@@ -30,6 +30,12 @@ public sealed record AppSettings
     /// <summary>A soft sound when a change starts waiting for the controller's review. Off by default: many will not want it.</summary>
     public bool ReviewSound { get; init; }
 
+    public const int MinReminderMinutes = 1;
+    public const int MaxReminderMinutes = 60;
+
+    /// <summary>Minutes before the review strip comes back after Later, if a change is still waiting.</summary>
+    public int ReviewReminderMinutes { get; init; } = 3;
+
     /// <summary>The corner of the screen the review strip appears in.</summary>
     public ScreenCorner ReviewCorner { get; init; } = ScreenCorner.BottomRight;
 
@@ -83,6 +89,7 @@ public sealed record AppSettings
     {
         IntervalMinutes = Math.Clamp(IntervalMinutes, MinIntervalMinutes, MaxIntervalMinutes),
         MaxConnections = Math.Clamp(MaxConnections, 1, MaxConnectionsLimit),
+        ReviewReminderMinutes = Math.Clamp(ReviewReminderMinutes, MinReminderMinutes, MaxReminderMinutes),
         ReviewScreen = (ReviewScreen ?? "").Trim() is { Length: <= 64 } screen ? screen : "",
         Airports = CleanIcaos(Airports),
         DisabledRules = (DisabledRules ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),

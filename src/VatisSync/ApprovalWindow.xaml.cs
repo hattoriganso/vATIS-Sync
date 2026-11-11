@@ -37,6 +37,8 @@ public partial class ApprovalWindow : Window
         Summary.Text = several ? "" : only.CurrentFlow.DescribeChangeTo(only.NewFlow);
         Summary.Visibility = several ? Visibility.Collapsed : Visibility.Visible;
         MuteButton.Content = $"Disregard {request.Airport} for this session";
+        Hint.Text = "Disregard leaves vATIS as it is. You will be asked again only if the real-world ATIS changes again. " +
+                    $"Disregarding {request.Airport} for this session stops the questions about it until you stop and restart the sync.";
 
         foreach (var change in request.Changes) Sections.Children.Add(BuildSection(change, several));
 
