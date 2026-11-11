@@ -2,10 +2,13 @@
 
 Once you are connected to an ATIS, a change to its text reaches the pilots at once. A runway change is the one that
 matters most: a pilot told "runway 26" a minute ago, and then "runway 8", has been caught out. So when a refresh would
-change the runways or approaches of a connected ATIS, the app shows you exactly what would change and waits for your
-decision. It asks about nothing else: weather, a closed taxiway or a new NOTAM never raises a question.
+change the runways or approaches of a connected ATIS, the app lets you know and holds that airport until you have seen
+exactly what would change and decided. It asks about nothing else: weather, a closed taxiway or a new NOTAM never
+raises a question. And it never takes the screen to ask: you may be in the middle of a transmission, and the change can
+wait a minute.
 
 - [When you are asked](#when-you-are-asked)
+- [How you are told](#how-you-are-told)
 - [The window](#the-window)
 - [The three choices](#the-three-choices)
 - [One airport, one answer](#one-airport-one-answer)
@@ -26,16 +29,43 @@ Set it under **Settings**, in **Changes to a connected ATIS**:
 An older version also had "Ask me before any change". It was removed; a settings file that still says so is read as
 the default.
 
-While the question is open the sync waits, and the Overview says `Waiting for your approval (KPHX)`. A tray
-notification also tells you a question is waiting. Other airports are not updated until you answer.
-
 An airport is asked about as a whole. KMIA_A (arrival) and KMIA_D (departure) are two stations of one airport, and
 they are always synced together or not at all, so the answer covers every station of the airport. See
 [One airport, one answer](#one-airport-one-answer).
 
+## How you are told
+
+A change waiting for you never opens a window by itself.
+
+- **A small strip** appears in a corner of the screen (the bottom right unless you choose another one under
+  **Settings**, in **Changes to a connected ATIS**): `KPHX: Runways 26 → 8.`, with **Review** and
+  **Later**. It stays on top but is never the active window, so nothing you type or press can answer it, and it has no
+  Apply button: it only offers to open the review window.
+- **Several airports.** When more than one airport has a change waiting, the strip reads `2 airports waiting review`,
+  and **Review** opens the one that has waited longest.
+- **Later** hides the strip for 3 minutes. If a change is still waiting then, it comes back. An airport that starts
+  waiting in the meantime is counted when it comes back.
+- **A sound**, if you want one. Under **Settings**, in **Changes to a connected ATIS**, tick *Play a soft sound when a
+  change is waiting for my review*. It is off by default. It plays when the strip appears, and again if the strip comes
+  back after Later, but not for each change while the strip is already showing.
+- **A tray notification** says the same, and **Review waiting changes** in the tray menu opens the review window, for
+  anyone who works without the mouse.
+- **In the app**, the airport reads **Needs review** in amber (its dot turns amber too, and so does the D-ATIS column
+  of its stations on the Overview), and its page has a banner with a **Review** button.
+
+**The sync does not wait for you.** Only the airport with the change waits: nothing is written for it until you decide,
+and the other airports keep refreshing on schedule. When you answer, the answer takes effect at once, not at the next
+refresh.
+
+- If the real-world ATIS moves again before you have answered, the question is replaced by one about the new text, and a
+  review window that was open for the old text closes, so you never apply text you did not see.
+- If the real-world ATIS agrees with vATIS again, the question goes away by itself.
+- Stopping the sync withdraws every question, with the ATIS left as it is.
+
 ## The window
 
-The window is titled `Approve ATIS change - KPHX` and stays on top of other windows. It does not block the app.
+Click **Review** and the window opens in front of the other windows. It is titled `Approve ATIS change - KPHX`. It does
+not block the app.
 
 - **Headline.** `KPHX: runways changed`, with a line under it that says how
   (`Runways 26 → 8.`, with the approaches too when they change: `Approaches ILS → RNAV, VISUAL.`).
@@ -46,6 +76,10 @@ The window is titled `Approve ATIS change - KPHX` and stays on top of other wind
   panes, one under the other, headed by its name and what changed (`KPHX_A: Runways 26 → 8.`,
   or `KPHX_D: The ATIS text changed.` for a station whose runways stay the same). The window scrolls if they
   do not all fit.
+- **Enter does nothing.** No button is the default and none has the keyboard when the window opens, so a stray key
+  cannot answer it. Use the mouse, or Tab to a button. Esc is **Disregard**.
+- **Apply ignores the first moment.** A click on **Apply** in the first 0.6 seconds after the window opens is ignored,
+  so a double-click on **Review** cannot land on it.
 
 ## The three choices
 
@@ -56,7 +90,7 @@ The window is titled `Approve ATIS change - KPHX` and stays on top of other wind
 | **Disregard KPHX for this session** | Leaves vATIS as it is, and stops asking about that airport until you stop and restart the sync. |
 
 Closing the window with the X, or pressing Esc, counts as **Disregard**. Stopping the sync while a question is open
-closes it too, with the ATIS left as it is.
+closes it too, with the ATIS left as it is. Until you answer, the airport stays at **Needs review**.
 
 Nothing is ever applied except by pressing **Apply**. There is deliberately no "apply and stop asking": a runway
 change must never reach a connected ATIS without you having seen it.
@@ -98,8 +132,8 @@ On the page of a Desynced airport, an amber banner explains why and offers **Res
 
 - **What it does.** It takes back your Disregard for that airport (including *Disregard for this session*) and checks
   the real-world ATIS straight away, without waiting for the next refresh.
-- **What you then see.** If a change still needs approval, the question window comes up again with what would change,
-  and you choose **Apply** or **Disregard** as before. Resync never writes anything by itself: a runway change still
+- **What you then see.** If a change still needs approval, the strip comes back, **Review** opens the window with what
+  would change, and you choose **Apply** or **Disregard** as before. Resync never writes anything by itself: a runway change still
   cannot reach vATIS without you having seen it. If the change no longer needs approval, it is applied like any other.
 - **The Log** says `KPHX: resync requested, checking the real-world ATIS now`.
 
