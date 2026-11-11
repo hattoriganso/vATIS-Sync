@@ -37,8 +37,9 @@ they are always synced together or not at all, so the answer covers every statio
 
 A change waiting for you never opens a window by itself.
 
-- **A small strip** appears in a corner of the screen (the bottom right unless you choose another one under
-  **Settings**, in **Changes to a connected ATIS**): `KPHX: Runways 26 → 8.`, with **Review** and
+- **A small strip** appears in a corner of a screen (the bottom right of the main screen unless you choose another
+  screen or corner under **Settings**, in **Changes to a connected ATIS**; a screen that is no longer connected means
+  the main screen): `KPHX: Runways 26 → 8.`, with **Review** and
   **Later**. It stays on top but is never the active window, so nothing you type or press can answer it, and it has no
   Apply button: it only offers to open the review window.
 - **Several airports.** When more than one airport has a change waiting, the strip reads `2 airports waiting review`,

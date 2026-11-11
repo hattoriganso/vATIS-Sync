@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using VatisSync.Core;
 using VatisSync.Services;
 
@@ -58,13 +59,38 @@ public partial class ReviewStrip : Window
     /// <summary>The corner the strip sits in. Set before it is shown.</summary>
     public ScreenCorner Corner { get; set; } = ScreenCorner.BottomRight;
 
-    /// <summary>The chosen corner of the main screen's work area, clear of the taskbar.</summary>
+    /// <summary>The monitor to appear on (its Windows device name). Empty, or a monitor that is gone, means the main screen.</summary>
+    public string ScreenName { get; set; } = "";
+
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out WindowRect rect);
+    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowRect { public int Left, Top, Right, Bottom; }
+
+    private const uint SwpNoSize = 0x0001, SwpNoZOrder = 0x0004, SwpNoActivate = 0x0010;
+
+    /// <summary>
+    /// The chosen corner of the chosen monitor's work area, clear of the taskbar. Placed in pixels with the window's own size,
+    /// so it lands right on a monitor with a different scaling than the main one.
+    /// </summary>
     private void PlaceInCorner()
     {
-        var area = SystemParameters.WorkArea;
-        const double gap = 16;
-        Left = Corner is ScreenCorner.BottomLeft or ScreenCorner.TopLeft ? area.Left + gap : area.Right - ActualWidth - gap;
-        Top = Corner is ScreenCorner.TopLeft or ScreenCorner.TopRight ? area.Top + gap : area.Bottom - ActualHeight - gap;
+        var handle = new WindowInteropHelper(this).Handle;
+        var screen = ScreenPicker.Pick(Screens.Connected(), ScreenName);
+        if (handle == IntPtr.Zero || screen is null || !GetWindowRect(handle, out var size))
+        {
+            // Windows gave us nothing to work with: the main screen, as WPF sees it.
+            var area = SystemParameters.WorkArea;
+            const double gap = 16;
+            Left = Corner is ScreenCorner.BottomLeft or ScreenCorner.TopLeft ? area.Left + gap : area.Right - ActualWidth - gap;
+            Top = Corner is ScreenCorner.TopLeft or ScreenCorner.TopRight ? area.Top + gap : area.Bottom - ActualHeight - gap;
+            return;
+        }
+
+        var scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        var (x, y) = screen.Place(Corner, size.Right - size.Left, size.Bottom - size.Top, (int)Math.Round(16 * scale));
+        SetWindowPos(handle, IntPtr.Zero, x, y, 0, 0, SwpNoSize | SwpNoZOrder | SwpNoActivate);
     }
 
     private void OnReview(object sender, RoutedEventArgs e) => ReviewClicked?.Invoke();

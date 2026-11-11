@@ -33,6 +33,9 @@ public sealed record AppSettings
     /// <summary>The corner of the screen the review strip appears in.</summary>
     public ScreenCorner ReviewCorner { get; init; } = ScreenCorner.BottomRight;
 
+    /// <summary>The monitor (by its Windows device name, like \\.\DISPLAY2) the review strip appears on. Empty is the main screen.</summary>
+    public string ReviewScreen { get; init; } = "";
+
     /// <summary>Light, dark, or follow Windows (the default). Windows High Contrast overrides all three.</summary>
     public ThemePreference Theme { get; init; } = ThemePreference.System;
 
@@ -80,6 +83,7 @@ public sealed record AppSettings
     {
         IntervalMinutes = Math.Clamp(IntervalMinutes, MinIntervalMinutes, MaxIntervalMinutes),
         MaxConnections = Math.Clamp(MaxConnections, 1, MaxConnectionsLimit),
+        ReviewScreen = (ReviewScreen ?? "").Trim() is { Length: <= 64 } screen ? screen : "",
         Airports = CleanIcaos(Airports),
         DisabledRules = (DisabledRules ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList(),
         Frequencies = CleanFrequencies(Frequencies),

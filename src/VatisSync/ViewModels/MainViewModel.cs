@@ -93,6 +93,7 @@ public sealed partial class MainViewModel : ObservableObject
         DetailedLog = _settings.DetailedLog;
         ReviewSound = _settings.ReviewSound;
         ReviewCorner = _settings.ReviewCorner;
+        ReviewScreen = _settings.ReviewScreen;
         Theme = _settings.Theme;
         StartSyncOnLaunch = _settings.StartSyncOnLaunch;
         StartMinimized = _settings.StartMinimized;
@@ -414,6 +415,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _detailedLog = true;
     [ObservableProperty] private bool _reviewSound;
     [ObservableProperty] private ScreenCorner _reviewCorner = ScreenCorner.BottomRight;
+    [ObservableProperty] private string _reviewScreen = "";
+
+    /// <summary>The screens to pick from, as connected right now (the settings window is made fresh each time it opens).</summary>
+    public IReadOnlyList<ScreenChoice> ScreenChoices => Screens.Choices(ReviewScreen);
 
     /// <summary>What the user chose: light, dark, or follow Windows.</summary>
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ThemeSummary))]
@@ -459,6 +464,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnStartMinimizedChanged(bool value) => Save();
     partial void OnReviewSoundChanged(bool value) => Save();
     partial void OnReviewCornerChanged(ScreenCorner value) => Save();
+    partial void OnReviewScreenChanged(string value) => Save();
     partial void OnCloseToTrayChanged(bool value) => Save();
 
     partial void OnStartWithWindowsChanged(bool value)
@@ -496,6 +502,7 @@ public sealed partial class MainViewModel : ObservableObject
         DetailedLog = DetailedLog,
         ReviewSound = ReviewSound,
         ReviewCorner = ReviewCorner,
+        ReviewScreen = ReviewScreen,
         Theme = Theme,
         DisabledRules = DefaultRules.Disabled,
         Frequencies = DefaultFrequencies.ToDictionary(),
