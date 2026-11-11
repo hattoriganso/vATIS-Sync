@@ -60,7 +60,7 @@ public class DatisPreviewTests
         Assert.Equal("TWY B CLSD.", station.Notams);
         Assert.Contains("HAZD WX INFO FOR SFO AREA AVBL FM FSS.", Joined(station.ConditionsDiff, DiffKind.Removed));
         Assert.Contains("ILS RWY 28R IN USE.", Joined(station.ConditionsDiff, DiffKind.Same));
-        Assert.Empty(station.ConditionsDiff.Where(s => s.Kind == DiffKind.Added));
+        Assert.DoesNotContain(station.ConditionsDiff, s => s.Kind == DiffKind.Added);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class DatisPreviewTests
         var station = (await builder.BuildAsync(["KSFO"], rules)).Stations.Single();
 
         Assert.Contains("HAZD WX INFO FOR SFO AREA AVBL FM FSS", station.Conditions);
-        Assert.Empty(station.ConditionsDiff.Where(s => s.Kind != DiffKind.Same));
+        Assert.DoesNotContain(station.ConditionsDiff, s => s.Kind != DiffKind.Same);
     }
 
     [Fact]

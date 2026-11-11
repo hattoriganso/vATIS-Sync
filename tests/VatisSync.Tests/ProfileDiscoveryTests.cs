@@ -156,12 +156,15 @@ public class ProfileDiscoveryTests
             if (Interlocked.Increment(ref calls) == 1) throw new InvalidCastException("odd reply");
             return Task.FromResult<IReadOnlyList<VatisStation>>([Station("KSFO")]);
         }, Delay, Tick);
+        // Every state is kept, so the short wait between the two tries is seen however busy the machine is.
+        var states = new ConcurrentQueue<DiscoveryState>();
+        d.StateChanged += states.Enqueue;
 
         d.Start();
-        await WaitFor(() => d.State.Phase == DiscoveryPhase.Waiting, "waiting after the odd error");
-        Assert.Equal("odd reply", d.State.Problem);
         await WaitFor(() => d.State.Phase == DiscoveryPhase.Found, "recovering");
         await d.StopAsync();
+
+        Assert.Contains(states, s => s.Phase == DiscoveryPhase.Waiting && s.Problem == "odd reply");
     }
 
     [Fact]
